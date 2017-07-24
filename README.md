@@ -1,4 +1,10 @@
 # Vapor OAuth
+
+[![Language](https://img.shields.io/badge/Swift-3.1-brightgreen.svg)](http://swift.org)
+[![Build Status](https://travis-ci.org/brokenhandsio/vapor-oauth.svg?branch=master)](https://travis-ci.org/brokenhandsio/vapor-oauth)
+[![codecov](https://codecov.io/gh/brokenhandsio/vapor-oauth/branch/master/graph/badge.svg)](https://codecov.io/gh/brokenhandsio/vapor-oauth)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/brokenhandsio/vapor-oauth/master/LICENSE)
+
 Vapor OAuth is an OAuth2 Provider Library written for Vapor. You can integrate the library into your server to provide authorization for applications to connect to your APIs.
 
 It follows both [RFC 6749](https://tools.ietf.org/html/rfc6749) and [RFC6750](https://tools.ietf.org/html/rfc6749) and there is an extensive test suite to make sure it adheres to the specification.

@@ -66,7 +66,7 @@ You can also get the user with `try request.oauth.user()`.
 
 ## Authorization Code Grant
 
-The basic outline of this grant type is:
+The Authorization Code flow is the most common flow used with OAuth. It is what most web applications will use for authorization with an OAuth Resource Server. The basic outline of this grant type is:
 
 1. A client (another app) redirects a resource owner (a user that holds information with you) to your Vapor app.
 2. Your Vapor app then authenticates the user and asks the user whether they want to allow the client access to the scopes requested (think logging into something with your Facebook account - it's this method).
@@ -76,12 +76,50 @@ The basic outline of this grant type is:
 
 ### Implementation Details
 
-As well as implementing the Code Manager, Token Manager, and Client Retriever, the most important part to implement is the `AuthorizeHandler`.
+As well as implementing the Code Manager, Token Manager, and Client Retriever, the most important part to implement is the `AuthorizeHandler`. Your authorize handler is responsible for letting the user decide whether they should let an application have access to their account. It should be [clear and easy](https://www.oauth.com/oauth2-servers/authorization/the-authorization-interface/) to understand what is going on and should be clear what the application is requesting access to.
+
+It is your responsibility to ensure that the user is logged in and handling the case when they are not. An example implemntation for the authorize handler may look something like:
+
+```swift
+func handleAuthorizationRequest(_ request: Request, responseType: String, clientID: String, redirectURI: URI, scope: [String], state: String?, csrfToken: String) throws -> ResponseRepresentable {
+    guard request.auth.isAuthenticated(FluentOAuthUser.self) else {
+        let redirectCookie = Cookie(name: "OAuthRedirect", value: request.uri.description)
+        let response = Response(redirect: "/login")
+        response.cookies.insert(redirectCookie)
+        return response
+    }
+
+    var parameters = Node([:], in: nil)
+
+    try parameters.set("csrf_token", csrfToken)
+    try parameters.set("scopes", scope)
+    try parameters.set("client_name", clientName)
+    try parameters.set("client_image", clientImage)
+    try parameters.set("user", loggedInUser)
+
+    return try view.make("authorizeApplication", parameters)
+}
+```
+
+You need to add the [`SessionsMiddleware`](https://docs.vapor.codes/2.0/sessions/sessions/) to your application for this flow to complete in order for the CSRF protection to work.
+
+When submitting the authorize form back to Vapor OAuth, in the form data it must include:
+
+* `applicationAuthorized` - a boolean value to signify if the user allowed access to the client or not
+* `csrfToken` - the CSRF token supplied in the handler to protect against CSRF attacks
 
 ## Implicit Grant
 
+The Implicit Grant is almost identical to the Authorize Code flow, except instead of being redirected back with a code which you then exchange for a token, you get redirected back with the token in the fragment. It is up to the client (such as an iOS application) to then parse the token out of the redirect URI fragment.
+
+This flow was designed for clients where you couldn't guarantee the security of the client secret, client-side apps, but has fallen out of favour recently and it is generally recommended to use the Authorization Code flow without a client secret instead.
+
 ## Resource Owner Password Credentials Grant
+
+The Password Credentials flow should only be used for first party applications, and Vapor OAuth mandates this. This flow allows the client to collect the username and password of the user and submit them directly to the OAuth server to get a token.
 
 Note that if you are using the password flow, as per [the specification](https://tools.ietf.org/html/rfc6749#section-4.3.2), you must secure your endpoint against brute force attacks with rate limiting or generating alerts. The library will output a warning message to the console for any unauthorized attempts, which you can use for this purpose. The message is in the form of `LOGIN WARNING: Invalid login attempt for user <USERNAME>`.
 
 ## Client Credentials Grant
+
+Client Credentials is a userless flow and is designed for servers accessing other servers without the need for a user. Access is granted based upon the authentication of the client requesting access.

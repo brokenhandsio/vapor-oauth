@@ -11,5 +11,6 @@ xcuserdata
 *.xcodeproj
 DerivedData/
 .DS_Store
+Package.pins
 
 # End of https://www.gitignore.io/api/vapor

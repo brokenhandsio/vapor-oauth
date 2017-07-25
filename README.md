@@ -43,7 +43,7 @@ Then add the provider to your `Config`:
 try addProvider(OAuth.Provider(codeManager: MyCodeManager(), tokenManager: MyTokenManager(), clientRetriever: MyClientRetriever(), authorizeHandler: MyAuthHandler(), userManager: MyUserManager(), validScopes: ["view_profile", "edit_profile"]))
 ```
 
-To integrate the library, you need to set up and number of things, which implement the various protocols required:
+To integrate the library, you need to set up a number of things, which implement the various protocols required:
 
 * `CodeManager` - this is responsible for generating and managing OAuth Codes. It is only required for the Authorization Code flow, so if you do not want to support this grant, you can leave out this parameter and use the default implementation
 * `TokenManager` - this is responsible for generating and managing Access and Refresh Tokens. You can either store these in memory, in Fluent, or with any backend.

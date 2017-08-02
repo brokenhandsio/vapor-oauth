@@ -1,7 +1,7 @@
 import Foundation
 import Core
 
-public final class AccessToken {
+public final class AccessToken: Extendable {
     public let tokenString: String
     public let clientID: String
     public let userID: String?

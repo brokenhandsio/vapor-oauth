@@ -1,11 +1,13 @@
 import Authentication
 import Core
 
-open class OAuthUser: Authenticatable {
+public final class OAuthUser: Authenticatable, Extendable {
     public let username: String
     public let emailAddress: String?
     public let password: Bytes
-    open var userID: String?
+    public let userID: String?
+    
+    public var extend: [String: Any] = [:]
     
     public init(userID: String?, username: String, emailAddress: String?, password: Bytes) {
         self.username = username

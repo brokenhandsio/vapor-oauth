@@ -1,12 +1,16 @@
-open class OAuthClient {
+import Core
+
+public final class OAuthClient: Extendable {
     
-    open var clientID: String
+    public let clientID: String
     public let redirectURIs: [String]?
     public let clientSecret: String?
     public let validScopes: [String]?
     public let confidentialClient: Bool?
     public let firstParty: Bool
     public let allowedGrantTypes: [OAuthFlowType]?
+    
+    public var extend: [String: Any] = [:]
     
     public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil, confidential: Bool? = nil, firstParty: Bool = false, allowedGrantTypes: [OAuthFlowType]? = nil) {
         self.clientID = clientID

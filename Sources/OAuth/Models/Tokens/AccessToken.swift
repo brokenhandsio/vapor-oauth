@@ -1,11 +1,14 @@
 import Foundation
+import Core
 
-open class AccessToken {
+public final class AccessToken {
     public let tokenString: String
     public let clientID: String
     public let userID: String?
     public let scopes: [String]?
     public let expiryTime: Date
+    
+    public var extend: [String: Any] = [:]
     
     public init(tokenString: String, clientID: String, userID: String?, scopes: [String]? = nil, expiryTime: Date) {
         self.tokenString = tokenString

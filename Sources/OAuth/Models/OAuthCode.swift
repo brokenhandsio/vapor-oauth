@@ -1,12 +1,15 @@
 import Foundation
+import Core
 
-open class OAuthCode {
+public final class OAuthCode {
     public let codeID: String
     public let clientID: String
     public let redirectURI: String
     public let userID: String
     public let expiryDate: Date
     public let scopes: [String]?
+    
+    public var extend: [String: Any] = [:]
     
     public init(codeID: String, clientID: String, redirectURI: String, userID: String, expiryDate: Date, scopes: [String]?) {
         self.codeID = codeID

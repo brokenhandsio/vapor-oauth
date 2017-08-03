@@ -104,7 +104,7 @@ struct OAuth2Provider {
             throw Abort.unauthorized
         }
         
-        guard let userID = user.userID else {
+        guard let userID = user.id else {
             throw Abort.unauthorized
         }
         
@@ -157,7 +157,7 @@ struct OAuth2Provider {
         
         if approveApplication {
             if responseType == ResponseType.token {
-                let accessToken = try tokenManager.generateAccessToken(clientID: clientID, userID: user.userID, scopes: scopes, expiryTime: 3600)
+                let accessToken = try tokenManager.generateAccessToken(clientID: clientID, userID: user.id, scopes: scopes, expiryTime: 3600)
                 redirectURI += "#token_type=bearer&access_token=\(accessToken.tokenString)&expires_in=3600"
             }
             else if responseType == ResponseType.code {

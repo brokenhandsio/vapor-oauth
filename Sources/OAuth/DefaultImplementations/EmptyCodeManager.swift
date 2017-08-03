@@ -1,3 +1,5 @@
+import Node
+
 public struct EmptyCodeManager: CodeManager {
     public init() {}
     
@@ -5,7 +7,7 @@ public struct EmptyCodeManager: CodeManager {
         return nil
     }
     
-    public func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
+    public func generateCode(userID: Identifier, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
         return ""
     }
     

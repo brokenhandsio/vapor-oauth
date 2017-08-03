@@ -31,7 +31,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     let redirectURI = "https://brokenhands.io/callback"
     let scope = "user"
     let scope2 = "email"
-    let userID = "user-id"
+    let userID: Identifier = "user-id"
     let username = "han"
     let email = "han.solo@therebelalliance.com"
     var newUser: OAuthUser!
@@ -55,7 +55,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let resourceController = TestResourceController(drop: drop)
         resourceController.addRoutes()
         
-        newUser = OAuthUser(userID: userID, username: username, emailAddress: email, password: "leia".makeBytes())
+        newUser = OAuthUser(id: userID, username: username, emailAddress: email, password: "leia".makeBytes())
         fakeUserManager.users.append(newUser)
     }
     
@@ -168,7 +168,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         
         XCTAssertEqual(userResponse.status, .ok)
         
-        XCTAssertEqual(userResponse.json?["userID"]?.string, userID)
+        XCTAssertEqual(userResponse.json?["userID"]?.string, userID.string)
         XCTAssertEqual(userResponse.json?["username"]?.string, username)
         XCTAssertEqual(userResponse.json?["email"]?.string, email)
     }
@@ -213,7 +213,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     
     func testAccessingProtectedRouteWithInvalidScopeReturns401() throws {
         let tokenID = "new-token-ID-invalid-scope"
-        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.userID, scopes: ["invalid"], expiryTime: Date().addingTimeInterval(3600))
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: ["invalid"], expiryTime: Date().addingTimeInterval(3600))
         fakeTokenManager.accessTokens[tokenID] = token
         
         let protectedRequest = Request(method: .get, uri: "/protected/")
@@ -227,7 +227,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     
     func testAccessingProtectedRouteWithOneInvalidScopeOneValidReturns401() throws {
         let tokenID = "new-token-ID-invalid-scope"
-        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.userID, scopes: ["invalid", scope], expiryTime: Date().addingTimeInterval(3600))
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: ["invalid", scope], expiryTime: Date().addingTimeInterval(3600))
         fakeTokenManager.accessTokens[tokenID] = token
         
         let protectedRequest = Request(method: .get, uri: "/protected/")
@@ -241,7 +241,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     
     func testAccessingProtectedRouteWithLowercaseHeaderWorks() throws {
         let tokenID = "new-token-ID-invalid-scope"
-        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.userID, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(3600))
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(3600))
         fakeTokenManager.accessTokens[tokenID] = token
         
         let protectedRequest = Request(method: .get, uri: "/protected/")
@@ -255,7 +255,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     
     func testThatAccessingProtectedRouteWithExpiredTokenReturns401() throws {
         let tokenID = "new-token-ID-invalid-scope"
-        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.userID, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(-3600))
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(-3600))
         fakeTokenManager.accessTokens[tokenID] = token
         
         let protectedRequest = Request(method: .get, uri: "/protected/")
@@ -288,7 +288,7 @@ struct TestResourceController {
     func getOAuthUser(request: Request) throws -> ResponseRepresentable {
         let user: OAuthUser = try request.oauth.user()
         var json = JSON()
-        try json.set("userID", user.userID)
+        try json.set("userID", user.id)
         try json.set("email", user.emailAddress)
         try json.set("username", user.username)
         

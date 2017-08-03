@@ -1,13 +1,14 @@
 import OAuth
+import Node
 
 class FakeUserManager: UserManager {
     var users: [OAuthUser] = []
     
-    func authenticateUser(username: String, password: String) -> String? {
+    func authenticateUser(username: String, password: String) -> Identifier? {
         for user in users {
             if user.username == username {
                 if user.password.makeString() == password {
-                    return user.userID
+                    return user.id
                 }
             }
         }
@@ -15,9 +16,9 @@ class FakeUserManager: UserManager {
         return nil
     }
     
-    func getUser(id: String) -> OAuthUser? {
+    func getUser(id: Identifier) -> OAuthUser? {
         for user in users {
-            if user.userID == id {
+            if user.id == id {
                 return user
             }
         }

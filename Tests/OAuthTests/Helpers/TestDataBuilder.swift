@@ -2,6 +2,7 @@ import OAuth
 import Vapor
 import Cookies
 import Sessions
+import Node
 
 class TestDataBuilder
 {
@@ -171,8 +172,8 @@ class TestDataBuilder
         return try drop.respond(to: authRequest)
     }
     
-    static let anyUserID = "12345-asbdsadi"
+    static let anyUserID: Identifier = "12345-asbdsadi"
     static func anyOAuthUser() -> OAuthUser {
-        return OAuthUser(userID: TestDataBuilder.anyUserID, username: "hansolo", emailAddress: "han.solo@therebelalliance.com", password: "leia".makeBytes())
+        return OAuthUser(id: TestDataBuilder.anyUserID, username: "hansolo", emailAddress: "han.solo@therebelalliance.com", password: "leia".makeBytes())
     }
 }

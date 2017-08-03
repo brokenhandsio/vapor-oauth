@@ -45,7 +45,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
     let testClientSecret = "ABCDEFGHIJK"
     let testClientRedirectURI = "https://api.brokenhands.io/callback"
     let testCodeID = "12345ABCD"
-    let userID = "the-user-id"
+    let userID: Identifier = "the-user-id"
     let scopes = ["email", "create"]
     
     // MARK: - Overrides

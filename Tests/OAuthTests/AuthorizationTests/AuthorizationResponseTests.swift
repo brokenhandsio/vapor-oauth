@@ -191,7 +191,7 @@ class AuthorizationResponseTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(code.userID, user.userID)
+        XCTAssertEqual(code.userID, user.id)
     }
     
     func testThatClientIDSetOnCode() throws {

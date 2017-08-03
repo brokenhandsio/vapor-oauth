@@ -1,10 +1,11 @@
 import OAuth
+import Node
 
 class StubCodeManager: CodeManager {
     
     var codeToReturn = "ABCDEFHIJKLMNO"
     
-    func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
+    func generateCode(userID: Identifier, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
         return codeToReturn
     }
     

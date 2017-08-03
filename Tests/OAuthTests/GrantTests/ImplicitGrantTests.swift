@@ -381,10 +381,10 @@ class ImplicitGrantTests: XCTestCase {
     }
     
     func testThatUserIDIsSetOnToken() throws {
-        let userID = "abcdef-123453-cbdhe"
+        let userID: Identifier = "abcdef-123453-cbdhe"
         let accessToken = "IMPLICIT-GRANT-ACCESS-TOKEN"
         fakeTokenManager.accessTokenToReturn = accessToken
-        let user = OAuthUser(userID: userID, username: "luke", emailAddress: "luke@skywalker.com", password: "obiwan".makeBytes())
+        let user = OAuthUser(id: userID, username: "luke", emailAddress: "luke@skywalker.com", password: "obiwan".makeBytes())
         _ = try getImplicitGrantResponse(user: user)
         
         guard let token = fakeTokenManager.getAccessToken(accessToken) else {

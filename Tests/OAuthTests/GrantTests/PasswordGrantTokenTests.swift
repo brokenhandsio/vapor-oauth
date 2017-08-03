@@ -46,7 +46,7 @@ class PasswordGrantTokenTests: XCTestCase {
     let testClientSecret = "01234567890"
     let testUsername = "testUser"
     let testPassword = "testPassword"
-    let testUserID = "ABCD-FJUH-31232"
+    let testUserID: Identifier = "ABCD-FJUH-31232"
     let accessToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     let refreshToken = "ABCDEFGHIJLMNOP1234567890"
     let scope1 = "email"
@@ -60,7 +60,7 @@ class PasswordGrantTokenTests: XCTestCase {
         
         let testClient = OAuthClient(clientID: testClientID, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2], firstParty: true)
         fakeClientGetter.validClients[testClientID] = testClient
-        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
+        let testUser = OAuthUser(id: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
         fakeUserManager.users.append(testUser)
         fakeTokenManager.accessTokenToReturn = accessToken
         fakeTokenManager.refreshTokenToReturn = refreshToken

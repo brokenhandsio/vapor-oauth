@@ -10,7 +10,7 @@ public final class Helper {
     let userManager: UserManager?
     init(request: Request, provider: OAuth2Provider?) {
         self.request = request
-        self.tokenAuthenticator = provider?.tokenAuthenticator
+        self.tokenAuthenticator = provider?.tokenHandler.tokenAuthenticator
         self.tokenManager = provider?.tokenManager
         self.userManager = provider?.userManager
     }

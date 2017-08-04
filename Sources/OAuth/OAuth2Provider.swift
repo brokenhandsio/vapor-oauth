@@ -10,10 +10,11 @@ struct OAuth2Provider {
     let clientRetriever: ClientRetriever
     let authorizeHandler: AuthorizeHandler
     let userManager: UserManager
-    let environment: Environment
     let log: LogProtocol
     let tokenAuthenticator: TokenAuthenticator
-    let validScopes: [String]?
+    let authorizePostHandler: AuthorizePostHandler
+    let scopeValidator: ScopeValidator
+    let clientValidator: ClientValidator
 
     init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
          authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
@@ -23,16 +24,17 @@ struct OAuth2Provider {
         self.clientRetriever = clientRetriever
         self.authorizeHandler = authorizeHandler
         self.userManager = userManager
-        self.validScopes = validScopes
-        self.environment = environment
         self.log = log
 
         tokenAuthenticator = TokenAuthenticator()
+        scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
+        clientValidator = ClientValidator(clientRetriever: clientRetriever, scopeValidator: scopeValidator, environment: environment)
+        authorizePostHandler = AuthorizePostHandler(tokenManager: tokenManager, codeManager: codeManager, clientValidator: clientValidator)
     }
 
     func addRoutes(to router: RouteBuilder) {
         router.get("oauth", "authorize", handler: authHandler)
-        router.post("oauth", "authorize", handler: authPostHandler)
+        router.post("oauth", "authorize", handler: authorizePostHandler.handleRequest)
         router.post("oauth", "token", handler: tokenPostHandler)
     }
 
@@ -69,8 +71,8 @@ struct OAuth2Provider {
         }
 
         do {
-            try validateClient(clientID: clientID, responseType: responseType,
-                               redirectURI: redirectURIString, scopes: scopes)
+            try clientValidator.validateClient(clientID: clientID, responseType: responseType,
+                                               redirectURI: redirectURIString, scopes: scopes)
         } catch AuthorizationError.invalidClientID {
             return try authorizeHandler.handleAuthorizationError(.invalidClientID)
         } catch AuthorizationError.invalidRedirectURI {
@@ -104,112 +106,6 @@ struct OAuth2Provider {
         return try authorizeHandler.handleAuthorizationRequest(request, responseType: responseType, clientID: clientID,
                                                                redirectURI: redirectURI, scope: scopes, state: state,
                                                                csrfToken: csrfToken)
-    }
-
-    struct AuthorizePostRequest {
-        let user: OAuthUser
-        let userID: Identifier
-        let redirectURIBaseString: String
-        let approveApplication: Bool
-        let clientID: String
-        let responseType: String
-        let csrfToken: String
-        let scopes: [String]?
-    }
-
-    private func validateAuthPostRequest(_ request: Request) throws -> AuthorizePostRequest {
-        guard let user = request.auth.authenticated(OAuthUser.self) else {
-            throw Abort.unauthorized
-        }
-
-        guard let userID = user.id else {
-            throw Abort.unauthorized
-        }
-
-        guard let redirectURIBaseString = request.query?[OAuthRequestParameters.redirectURI]?.string else {
-            throw Abort.badRequest
-        }
-
-        guard let approveApplication = request.data[OAuthRequestParameters.applicationAuthorized]?.bool else {
-            throw Abort.badRequest
-        }
-
-        guard let clientID = request.query?[OAuthRequestParameters.clientID]?.string else {
-            throw Abort.badRequest
-        }
-
-        guard let responseType = request.query?[OAuthRequestParameters.responseType]?.string else {
-            throw Abort.badRequest
-        }
-
-        guard let csrfToken = request.data[OAuthRequestParameters.csrfToken]?.string else {
-            throw Abort.badRequest
-        }
-
-        let scopes: [String]?
-
-        if let scopeQuery = request.query?[OAuthRequestParameters.scope]?.string {
-            scopes = scopeQuery.components(separatedBy: " ")
-        } else {
-            scopes = nil
-        }
-
-        return AuthorizePostRequest(user: user, userID: userID, redirectURIBaseString: redirectURIBaseString,
-                                    approveApplication: approveApplication, clientID: clientID,
-                                    responseType: responseType, csrfToken: csrfToken, scopes: scopes)
-    }
-
-    func authPostHandler(request: Request) throws -> ResponseRepresentable {
-        let requestObject = try validateAuthPostRequest(request)
-        var redirectURI = requestObject.redirectURIBaseString
-
-        do {
-            try validateClient(clientID: requestObject.clientID, responseType: requestObject.responseType,
-                               redirectURI: requestObject.redirectURIBaseString, scopes: requestObject.scopes)
-        } catch is AbortError {
-            throw Abort(.forbidden)
-        } catch {
-            throw Abort.badRequest
-        }
-
-        guard let session = request.session else {
-            throw Abort.badRequest
-        }
-
-        guard session.data[SessionData.csrfToken]?.string == requestObject.csrfToken else {
-            throw Abort.badRequest
-        }
-
-        if requestObject.approveApplication {
-            if requestObject.responseType == ResponseType.token {
-                let accessToken = try tokenManager.generateAccessToken(clientID: requestObject.clientID,
-                                                                       userID: requestObject.userID,
-                                                                       scopes: requestObject.scopes, expiryTime: 3600)
-                redirectURI += "#token_type=bearer&access_token=\(accessToken.tokenString)&expires_in=3600"
-            } else if requestObject.responseType == ResponseType.code {
-                let generatedCode = try codeManager.generateCode(userID: requestObject.userID,
-                                                                 clientID: requestObject.clientID,
-                                                                 redirectURI: requestObject.redirectURIBaseString,
-                                                                 scopes: requestObject.scopes)
-                redirectURI += "?code=\(generatedCode)"
-            } else {
-                redirectURI += "?error=invalid_request&error_description=unknown+response+type"
-            }
-        } else {
-            redirectURI += "?error=access_denied&error_description=user+denied+the+request"
-        }
-
-        if let requestedScopes = requestObject.scopes {
-            if !requestedScopes.isEmpty {
-                redirectURI += "&scope=\(requestedScopes.joined(separator: "+"))"
-            }
-        }
-
-        if let state = request.query?[OAuthRequestParameters.state]?.string {
-            redirectURI += "&state=\(state)"
-        }
-
-        return Response(redirect: redirectURI)
     }
 
     func tokenPostHandler(request: Request) throws -> Response {
@@ -273,7 +169,7 @@ struct OAuth2Provider {
         if let scopes = scopesRequested {
 
             do {
-                try validateScope(clientID: clientID, scopes: scopes)
+                try scopeValidator.validateScope(clientID: clientID, scopes: scopes)
             } catch ScopeError.invalid {
                 return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                          description: "Request contained an invalid scope")
@@ -331,7 +227,7 @@ struct OAuth2Provider {
         let scopeString = request.data[OAuthRequestParameters.scope]?.string
         if let scopes = scopeString {
             do {
-                try validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
+                try scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
                 return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                          description: "Request contained an invalid scope")
@@ -426,7 +322,7 @@ struct OAuth2Provider {
 
         if let scopes = scopeString {
             do {
-                try validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
+                try scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
                 return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                          description: "Request contained an invalid scope")
@@ -466,29 +362,6 @@ struct OAuth2Provider {
         }
 
         return true
-    }
-
-    private func validateScope(clientID: String, scopes: [String]?) throws {
-        if let requestedScopes = scopes {
-            let providerScopes = validScopes ?? []
-
-            if !providerScopes.isEmpty {
-                for scope in requestedScopes {
-                    guard providerScopes.contains(scope) else {
-                        throw ScopeError.unknown
-                    }
-                }
-            }
-
-            let client = clientRetriever.getClient(clientID: clientID)
-            if let clientScopes = client?.validScopes {
-                for scope in requestedScopes {
-                    guard clientScopes.contains(scope) else {
-                        throw ScopeError.invalid
-                    }
-                }
-            }
-        }
     }
 
     private func authenticateClient(clientID: String, clientSecret: String?,
@@ -552,42 +425,6 @@ struct OAuth2Provider {
         response.headers[.cacheControl] = "no-store"
 
         return response
-    }
-
-    private func validateClient(clientID: String, responseType: String, redirectURI: String, scopes: [String]?) throws {
-        guard let client = clientRetriever.getClient(clientID: clientID) else {
-            throw AuthorizationError.invalidClientID
-        }
-
-        if client.confidentialClient ?? false {
-            guard responseType == ResponseType.code else {
-                throw AuthorizationError.confidentialClientTokenGrant
-            }
-        }
-
-        guard client.validateRedirectURI(redirectURI) else {
-            throw AuthorizationError.invalidRedirectURI
-        }
-
-        if responseType == ResponseType.code {
-            guard client.allowedGrantTypes?.contains(.authorization) ?? true else {
-                throw Abort(.forbidden)
-            }
-        } else {
-            guard client.allowedGrantTypes?.contains(.implicit) ?? true else {
-                throw Abort(.forbidden)
-            }
-        }
-
-        try validateScope(clientID: clientID, scopes: scopes)
-
-        let redirectURI = URIParser.shared.parse(bytes: redirectURI.makeBytes())
-
-        if environment == .production {
-            if redirectURI.scheme != "https" {
-                throw AuthorizationError.httpRedirectURI
-            }
-        }
     }
 
     private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String,

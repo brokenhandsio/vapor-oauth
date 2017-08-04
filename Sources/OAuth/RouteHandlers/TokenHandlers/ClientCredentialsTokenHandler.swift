@@ -48,6 +48,7 @@ struct ClientCredentialsTokenHandler {
                                                                              scopes: scopes,
                                                                              accessTokenExpiryTime: expiryTime)
 
-        return try tokenResponseGenerator.createResponse(accessToken: access, refreshToken: refresh, expires: expiryTime, scope: scopeString)
+        return try tokenResponseGenerator.createResponse(accessToken: access, refreshToken: refresh,
+                                                         expires: expiryTime, scope: scopeString)
     }
 }

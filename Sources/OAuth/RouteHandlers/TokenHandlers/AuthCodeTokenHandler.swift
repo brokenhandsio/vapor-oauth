@@ -35,8 +35,9 @@ struct AuthCodeTokenHandler {
 
         guard let code = codeManager.getCode(codeString),
             codeValidator.validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
+                let errorDescription = "The code provided was invalid or expired, or the redirect URI did not match"
                 return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
-                                                                 description: "The code provided was invalid or expired, or the redirect URI did not match")
+                                                                 description: errorDescription)
         }
 
         codeManager.codeUsed(code)

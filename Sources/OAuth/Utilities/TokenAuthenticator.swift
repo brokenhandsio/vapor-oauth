@@ -1,13 +1,13 @@
 struct TokenAuthenticator {
-        
-    func validateRefreshToken(_ refreshToken: RefreshToken, clientID: String) -> Bool {        
+
+    func validateRefreshToken(_ refreshToken: RefreshToken, clientID: String) -> Bool {
         guard refreshToken.clientID  == clientID else {
             return false
         }
-        
+
         return true
     }
-    
+
     func validateAccessToken(_ accessToken: AccessToken, requiredScopes: [String]?) -> Bool {
         guard let scopes = requiredScopes else {
             return true
@@ -22,7 +22,7 @@ struct TokenAuthenticator {
                 return false
             }
         }
-        
+
         return true
     }
 }

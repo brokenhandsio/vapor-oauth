@@ -15,7 +15,7 @@ struct OAuthRequestParameters {
 }
 
 struct OAuthResponseParameters {
-    
+
     static let error = "error"
     static let errorDescription = "error_description"
     static let tokenType = "token_type"
@@ -23,7 +23,7 @@ struct OAuthResponseParameters {
     static let accessToken = "access_token"
     static let refreshToken = "refresh_token"
     static let scope = "scope"
-    
+
     struct ErrorType {
         static let invalidRequest = "invalid_request"
         static let invalidScope = "invalid_scope"

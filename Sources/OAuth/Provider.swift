@@ -2,20 +2,20 @@ import Vapor
 
 public final class Provider: Vapor.Provider {
     public static let repositoryName = "vapor-oauth"
-    
+
     let codeManager: CodeManager
     let tokenManager: TokenManager
     let clientRetriever: ClientRetriever
     let authorizeHandler: AuthorizeHandler
     let userManager: UserManager
     let validScopes: [String]?
-    
+
     public init(config: Config) throws {
         throw OAuthProviderError.configInitUnavailble
     }
-    
+
     public init(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager, clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(), userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil) {
-        
+
         self.codeManager = codeManager
         self.tokenManager = tokenManager
         self.clientRetriever = clientRetriever
@@ -23,24 +23,24 @@ public final class Provider: Vapor.Provider {
         self.userManager = userManager
         self.validScopes = validScopes
     }
-    
+
     public func boot(_ config: Config) throws { }
-    
+
     public func boot(_ drop: Droplet) throws {
         let log = try drop.config.resolveLog()
         let provider = OAuth2Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes, environment: drop.config.environment, log: log)
-        
+
         provider.addRoutes(to: drop)
-        
+
         Request.oauthProvider = provider
     }
-    
+
     public func beforeRun(_ drop: Droplet) throws { }
 }
 
 public enum OAuthProviderError: Error, CustomStringConvertible {
     case configInitUnavailble
-    
+
     public var description: String {
         switch self {
         case .configInitUnavailble:

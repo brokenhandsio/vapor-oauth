@@ -16,9 +16,9 @@ class FakeUserManager: UserManager {
         return nil
     }
     
-    func getUser(id: Identifier) -> OAuthUser? {
+    func getUser(userID: Identifier) -> OAuthUser? {
         for user in users {
-            if user.id == id {
+            if user.id == userID {
                 return user
             }
         }

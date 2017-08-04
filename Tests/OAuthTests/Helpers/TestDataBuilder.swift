@@ -174,6 +174,6 @@ class TestDataBuilder
     
     static let anyUserID: Identifier = "12345-asbdsadi"
     static func anyOAuthUser() -> OAuthUser {
-        return OAuthUser(id: TestDataBuilder.anyUserID, username: "hansolo", emailAddress: "han.solo@therebelalliance.com", password: "leia".makeBytes())
+        return OAuthUser(userID: TestDataBuilder.anyUserID, username: "hansolo", emailAddress: "han.solo@therebelalliance.com", password: "leia".makeBytes())
     }
 }

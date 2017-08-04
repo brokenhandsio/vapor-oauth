@@ -12,7 +12,8 @@ public final class OAuthClient: Extendable {
 
     public var extend: [String: Any] = [:]
 
-    public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil, confidential: Bool? = nil, firstParty: Bool = false, allowedGrantTypes: [OAuthFlowType]? = nil) {
+    public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
+                confidential: Bool? = nil, firstParty: Bool = false, allowedGrantTypes: [OAuthFlowType]? = nil) {
         self.clientID = clientID
         self.redirectURIs = redirectURIs
         self.clientSecret = clientSecret
@@ -27,7 +28,7 @@ public final class OAuthClient: Extendable {
             return false
         }
 
-        if (redirectURIs.contains(redirectURI)) {
+        if redirectURIs.contains(redirectURI) {
             return true
         }
 

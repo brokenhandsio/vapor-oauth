@@ -55,7 +55,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let resourceController = TestResourceController(drop: drop)
         resourceController.addRoutes()
         
-        newUser = OAuthUser(id: userID, username: username, emailAddress: email, password: "leia".makeBytes())
+        newUser = OAuthUser(userID: userID, username: username, emailAddress: email, password: "leia".makeBytes())
         fakeUserManager.users.append(newUser)
     }
     

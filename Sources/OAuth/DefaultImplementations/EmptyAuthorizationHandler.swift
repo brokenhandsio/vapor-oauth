@@ -8,7 +8,9 @@ public struct EmptyAuthorizationHandler: AuthorizeHandler {
         return ""
     }
 
-    public func handleAuthorizationRequest(_ request: Request, responseType: String, clientID: String, redirectURI: URI, scope: [String], state: String?, csrfToken: String) throws -> ResponseRepresentable {
+    public func handleAuthorizationRequest(_ request: Request, responseType: String, clientID: String,
+                                           redirectURI: URI, scope: [String], state: String?,
+                                           csrfToken: String) throws -> ResponseRepresentable {
         return ""
     }
 }

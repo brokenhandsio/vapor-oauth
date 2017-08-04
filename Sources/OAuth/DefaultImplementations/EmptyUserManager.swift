@@ -4,7 +4,7 @@ public struct EmptyUserManager: UserManager {
 
     public init() {}
 
-    public func getUser(id: Identifier) -> OAuthUser? {
+    public func getUser(userID: Identifier) -> OAuthUser? {
         return nil
     }
 

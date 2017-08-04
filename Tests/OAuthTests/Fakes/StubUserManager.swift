@@ -6,7 +6,7 @@ struct StubUserManager: UserManager {
         return nil
     }
     
-    func getUser(id: Identifier) -> OAuthUser? {
+    func getUser(userID: Identifier) -> OAuthUser? {
         return nil
     }
 }

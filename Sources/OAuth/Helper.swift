@@ -38,7 +38,7 @@ public final class Helper {
             throw Abort.unauthorized
         }
 
-        guard let user = userManager.getUser(id: userID) else {
+        guard let user = userManager.getUser(userID: userID) else {
             throw Abort.unauthorized
         }
 

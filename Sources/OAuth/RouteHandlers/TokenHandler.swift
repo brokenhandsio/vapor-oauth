@@ -6,6 +6,7 @@ struct TokenHandler {
     let clientValidator: ClientValidator
     let tokenManager: TokenManager
     let tokenAuthenticator = TokenAuthenticator()
+    let codeValidator = CodeValidator()
     let scopeValidator: ScopeValidator
     let codeManager: CodeManager
     let userManager: UserManager
@@ -175,7 +176,7 @@ struct TokenHandler {
         }
 
         guard let code = codeManager.getCode(codeString),
-            validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
+            codeValidator.validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
                 return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
                                          description: "The code provided was invalid or expired, or the redirect URI did not match")
         }
@@ -249,22 +250,6 @@ struct TokenHandler {
                                                                              accessTokenExpiryTime: expiryTime)
 
         return try tokenResponse(accessToken: access, refreshToken: refresh, expires: expiryTime, scope: scopeString)
-    }
-
-    private func validateCode(_ code: OAuthCode, clientID: String, redirectURI: String) -> Bool {
-        guard code.clientID == clientID else {
-            return false
-        }
-
-        guard code.expiryDate >= Date() else {
-            return false
-        }
-
-        guard code.redirectURI == redirectURI else {
-            return false
-        }
-
-        return true
     }
 
     private func tokenResponse(error: String, description: String, status: Status = .badRequest) throws -> Response {

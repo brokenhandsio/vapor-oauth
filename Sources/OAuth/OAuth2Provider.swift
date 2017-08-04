@@ -15,7 +15,9 @@ struct OAuth2Provider {
     let tokenAuthenticator: TokenAuthenticator
     let validScopes: [String]?
 
-    init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?, environment: Environment, log: LogProtocol) {
+    init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
+         authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
+         environment: Environment, log: LogProtocol) {
         self.codeManager = codeManager
         self.tokenManager = tokenManager
         self.clientRetriever = clientRetriever
@@ -55,25 +57,36 @@ struct OAuth2Provider {
         let state = request.query?[OAuthRequestParameters.state]?.string
 
         guard let responseType = request.query?[OAuthRequestParameters.responseType]?.string else {
-            return createErrorResponse(redirectURI: redirectURIString, errorType: OAuthResponseParameters.ErrorType.invalidRequest, errorDescription: "Request+was+missing+the+response_type+parameter", state: state)
+            return createErrorResponse(redirectURI: redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                                       errorDescription: "Request+was+missing+the+response_type+parameter", state: state)
         }
 
         guard responseType == ResponseType.code || responseType == ResponseType.token else {
-            return createErrorResponse(redirectURI: redirectURIString, errorType: OAuthResponseParameters.ErrorType.invalidRequest, errorDescription: "invalid+response+type", state: state)
+            return createErrorResponse(redirectURI: redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                                       errorDescription: "invalid+response+type", state: state)
         }
 
         do {
-            try validateClient(id: clientID, responseType: responseType, redirectURI: redirectURIString, scopes: scopes)
+            try validateClient(clientID: clientID, responseType: responseType,
+                               redirectURI: redirectURIString, scopes: scopes)
         } catch AuthorizationError.invalidClientID {
             return try authorizeHandler.handleAuthorizationError(.invalidClientID)
         } catch AuthorizationError.invalidRedirectURI {
             return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
         } catch ScopeError.unknown {
-            return createErrorResponse(redirectURI: redirectURIString, errorType: OAuthResponseParameters.ErrorType.invalidScope, errorDescription: "scope+is+unknown", state: state)
+            return createErrorResponse(redirectURI: redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
+                                       errorDescription: "scope+is+unknown", state: state)
         } catch ScopeError.invalid {
-            return createErrorResponse(redirectURI: redirectURIString, errorType: OAuthResponseParameters.ErrorType.invalidScope, errorDescription: "scope+is+invalid", state: state)
+            return createErrorResponse(redirectURI: redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
+                                       errorDescription: "scope+is+invalid", state: state)
         } catch AuthorizationError.confidentialClientTokenGrant {
-            return createErrorResponse(redirectURI: redirectURIString, errorType: OAuthResponseParameters.ErrorType.unauthorizedClient, errorDescription: "token+grant+disabled+for+confidential+clients", state: state)
+            return createErrorResponse(redirectURI: redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.unauthorizedClient,
+                                       errorDescription: "token+grant+disabled+for+confidential+clients", state: state)
         } catch AuthorizationError.httpRedirectURI {
             return try authorizeHandler.handleAuthorizationError(.httpRedirectURI)
         }
@@ -88,11 +101,23 @@ struct OAuth2Provider {
 
         try session.data.set(SessionData.csrfToken, csrfToken)
 
-        return try authorizeHandler.handleAuthorizationRequest(request, responseType: responseType, clientID: clientID, redirectURI: redirectURI, scope: scopes, state: state, csrfToken: csrfToken)
+        return try authorizeHandler.handleAuthorizationRequest(request, responseType: responseType, clientID: clientID,
+                                                               redirectURI: redirectURI, scope: scopes, state: state,
+                                                               csrfToken: csrfToken)
     }
 
-    func authPostHandler(request: Request) throws -> ResponseRepresentable {
+    struct AuthorizePostRequest {
+        let user: OAuthUser
+        let userID: Identifier
+        let redirectURIBaseString: String
+        let approveApplication: Bool
+        let clientID: String
+        let responseType: String
+        let csrfToken: String
+        let scopes: [String]?
+    }
 
+    private func validateAuthPostRequest(_ request: Request) throws -> AuthorizePostRequest {
         guard let user = request.auth.authenticated(OAuthUser.self) else {
             throw Abort.unauthorized
         }
@@ -104,8 +129,6 @@ struct OAuth2Provider {
         guard let redirectURIBaseString = request.query?[OAuthRequestParameters.redirectURI]?.string else {
             throw Abort.badRequest
         }
-
-        var redirectURI = redirectURIBaseString
 
         guard let approveApplication = request.data[OAuthRequestParameters.applicationAuthorized]?.bool else {
             throw Abort.badRequest
@@ -131,8 +154,18 @@ struct OAuth2Provider {
             scopes = nil
         }
 
+        return AuthorizePostRequest(user: user, userID: userID, redirectURIBaseString: redirectURIBaseString,
+                                    approveApplication: approveApplication, clientID: clientID,
+                                    responseType: responseType, csrfToken: csrfToken, scopes: scopes)
+    }
+
+    func authPostHandler(request: Request) throws -> ResponseRepresentable {
+        let requestObject = try validateAuthPostRequest(request)
+        var redirectURI = requestObject.redirectURIBaseString
+
         do {
-            try validateClient(id: clientID, responseType: responseType, redirectURI: redirectURIBaseString, scopes: scopes)
+            try validateClient(clientID: requestObject.clientID, responseType: requestObject.responseType,
+                               redirectURI: requestObject.redirectURIBaseString, scopes: requestObject.scopes)
         } catch is AbortError {
             throw Abort(.forbidden)
         } catch {
@@ -143,16 +176,22 @@ struct OAuth2Provider {
             throw Abort.badRequest
         }
 
-        guard session.data[SessionData.csrfToken]?.string == csrfToken else {
+        guard session.data[SessionData.csrfToken]?.string == requestObject.csrfToken else {
             throw Abort.badRequest
         }
 
-        if approveApplication {
-            if responseType == ResponseType.token {
-                let accessToken = try tokenManager.generateAccessToken(clientID: clientID, userID: user.id, scopes: scopes, expiryTime: 3600)
+        if requestObject.approveApplication {
+            if requestObject.responseType == ResponseType.token {
+                let accessToken = try tokenManager.generateAccessToken(clientID: requestObject.clientID,
+                                                                       userID: requestObject.userID,
+                                                                       scopes: requestObject.scopes, expiryTime: 3600)
                 redirectURI += "#token_type=bearer&access_token=\(accessToken.tokenString)&expires_in=3600"
-            } else if responseType == ResponseType.code {
-                redirectURI += "?code=\(try codeManager.generateCode(userID: userID, clientID: clientID, redirectURI: redirectURIBaseString, scopes: scopes))"
+            } else if requestObject.responseType == ResponseType.code {
+                let generatedCode = try codeManager.generateCode(userID: requestObject.userID,
+                                                                 clientID: requestObject.clientID,
+                                                                 redirectURI: requestObject.redirectURIBaseString,
+                                                                 scopes: requestObject.scopes)
+                redirectURI += "?code=\(generatedCode)"
             } else {
                 redirectURI += "?error=invalid_request&error_description=unknown+response+type"
             }
@@ -160,7 +199,7 @@ struct OAuth2Provider {
             redirectURI += "?error=access_denied&error_description=user+denied+the+request"
         }
 
-        if let requestedScopes = scopes {
+        if let requestedScopes = requestObject.scopes {
             if !requestedScopes.isEmpty {
                 redirectURI += "&scope=\(requestedScopes.joined(separator: "+"))"
             }
@@ -175,7 +214,8 @@ struct OAuth2Provider {
 
     func tokenPostHandler(request: Request) throws -> Response {
         guard let grantType = request.data[OAuthRequestParameters.grantType]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'grant_type' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'grant_type' parameter")
         }
 
         switch grantType {
@@ -188,34 +228,43 @@ struct OAuth2Provider {
         case OAuthFlowType.refresh.rawValue:
             return try handleRefreshTokenRequest(request)
         default:
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unsupportedGrant, description: "This server does not support the '\(grantType)' grant type")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unsupportedGrant,
+                                     description: "This server does not support the '\(grantType)' grant type")
         }
 
     }
 
     private func handleRefreshTokenRequest(_ request: Request) throws -> Response {
         guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_id' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_id' parameter")
         }
 
         guard let clientSecret = request.data[OAuthRequestParameters.clientSecret]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_secret' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_secret' parameter")
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: clientSecret, grantType: .refresh, checkConfidentialClient: true)
+            try authenticateClient(clientID: clientID, clientSecret: clientSecret,
+                                   grantType: .refresh, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient, description: "Request had invalid client credentials", status: .unauthorized)
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
+                                     description: "Request had invalid client credentials", status: .unauthorized)
         } catch ClientError.notConfidential {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient, description: "You are not authorized to use the Client Credentials grant type")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient,
+                                     description: "You are not authorized to use the Client Credentials grant type")
         }
 
         guard let refreshTokenString = request.data[OAuthRequestParameters.refreshToken]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'refresh_token' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'refresh_token' parameter")
         }
 
-        guard let refreshToken = tokenManager.getRefreshToken(refreshTokenString), tokenAuthenticator.validateRefreshToken(refreshToken, clientID: clientID) else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant, description: "The refresh token is invalid")
+        guard let refreshToken = tokenManager.getRefreshToken(refreshTokenString),
+            tokenAuthenticator.validateRefreshToken(refreshToken, clientID: clientID) else {
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
+                                     description: "The refresh token is invalid")
         }
 
         let scopesString = request.data[OAuthRequestParameters.scope]?.string
@@ -226,19 +275,23 @@ struct OAuth2Provider {
             do {
                 try validateScope(clientID: clientID, scopes: scopes)
             } catch ScopeError.invalid {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an invalid scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an invalid scope")
             } catch ScopeError.unknown {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an unknown scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an unknown scope")
             }
 
             if let tokenScopes = refreshToken.scopes {
                 for scope in scopes {
                     if !tokenScopes.contains(scope) {
-                        return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained elevated scopes")
+                        return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                                 description: "Request contained elevated scopes")
                     }
                 }
             } else {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained elevated scopes")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained elevated scopes")
             }
 
             tokenManager.updateRefreshToken(refreshToken, scopes: scopes)
@@ -247,25 +300,32 @@ struct OAuth2Provider {
         }
 
         let expiryTime = 3600
+        let accessToken  = try tokenManager.generateAccessToken(clientID: clientID, userID: refreshToken.userID,
+                                                                scopes: scopesRequested, expiryTime: expiryTime)
 
-        return try tokenResponse(accessToken: tokenManager.generateAccessToken(clientID: clientID, userID: refreshToken.userID, scopes: scopesRequested, expiryTime: expiryTime), refreshToken: nil, expires: expiryTime, scope: scopesString)
+        return try tokenResponse(accessToken: accessToken, refreshToken: nil, expires: expiryTime, scope: scopesString)
     }
 
     private func handleClientCredentialsTokenRequest(_ request: Request) throws -> Response {
         guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_id' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_id' parameter")
         }
 
         guard let clientSecret = request.data[OAuthRequestParameters.clientSecret]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_secret' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_secret' parameter")
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: clientSecret, grantType: .clientCredentials, checkConfidentialClient: true)
+            try authenticateClient(clientID: clientID, clientSecret: clientSecret,
+                                   grantType: .clientCredentials, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient, description: "Request had invalid client credentials", status: .unauthorized)
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
+                                     description: "Request had invalid client credentials", status: .unauthorized)
         } catch ClientError.notConfidential {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient, description: "You are not authorized to use the Client Credentials grant type")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient,
+                                     description: "You are not authorized to use the Client Credentials grant type")
         }
 
         let scopeString = request.data[OAuthRequestParameters.scope]?.string
@@ -273,40 +333,52 @@ struct OAuth2Provider {
             do {
                 try validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an invalid scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an invalid scope")
             } catch ScopeError.unknown {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an unknown scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an unknown scope")
             }
         }
 
         let expiryTime = 3600
-
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: nil, scopes: scopeString?.components(separatedBy: " "), accessTokenExpiryTime: expiryTime)
+        let scopes = scopeString?.components(separatedBy: " ")
+        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: nil,
+                                                                             scopes: scopes,
+                                                                             accessTokenExpiryTime: expiryTime)
 
         return try tokenResponse(accessToken: access, refreshToken: refresh, expires: expiryTime, scope: scopeString)
     }
 
     private func handleAuthCodeTokenRequest(_ request: Request) throws -> Response {
         guard let codeString = request.data[OAuthRequestParameters.code]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'code' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'code' parameter")
         }
 
         guard let redirectURI = request.data[OAuthRequestParameters.redirectURI]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'redirect_uri' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'redirect_uri' parameter")
         }
 
         guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_id' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_id' parameter")
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string, grantType: .authorization)
+            try authenticateClient(clientID: clientID,
+                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                   grantType: .authorization)
         } catch {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient, description: "Request had invalid client credentials", status: .unauthorized)
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
+                                     description: "Request had invalid client credentials", status: .unauthorized)
         }
 
-        guard let code = codeManager.getCode(codeString), validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant, description: "The code provided was invalid or expired, or the redirect URI did not match")
+        guard let code = codeManager.getCode(codeString),
+            validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
+                                     description: "The code provided was invalid or expired, or the redirect URI did not match")
         }
 
         codeManager.codeUsed(code)
@@ -314,30 +386,40 @@ struct OAuth2Provider {
         let scopes = code.scopes
         let expiryTime = 3600
 
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: code.userID, scopes: scopes, accessTokenExpiryTime: expiryTime)
+        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: code.userID,
+                                                                             scopes: scopes,
+                                                                             accessTokenExpiryTime: expiryTime)
 
-        return try tokenResponse(accessToken: access, refreshToken: refresh, expires: Int(expiryTime), scope: scopes?.joined(separator: " "))
+        return try tokenResponse(accessToken: access, refreshToken: refresh, expires: Int(expiryTime),
+                                 scope: scopes?.joined(separator: " "))
     }
 
     private func handlePasswordTokenRequest(_ request: Request) throws -> Response {
         guard let username = request.data[OAuthRequestParameters.usernname]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'username' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'username' parameter")
         }
 
         guard let password = request.data[OAuthRequestParameters.password]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'password' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'password' parameter")
         }
 
         guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest, description: "Request was missing the 'client_id' parameter")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
+                                     description: "Request was missing the 'client_id' parameter")
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string, grantType: .password)
+            try authenticateClient(clientID: clientID,
+                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                   grantType: .password)
         } catch ClientError.unauthorized {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient, description: "Request had invalid client credentials", status: .unauthorized)
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
+                                     description: "Request had invalid client credentials", status: .unauthorized)
         } catch ClientError.notFirstParty {
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient, description: "Password Credentials grant is not allowed")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.unauthorizedClient,
+                                     description: "Password Credentials grant is not allowed")
         }
 
         let scopeString = request.data[OAuthRequestParameters.scope]?.string
@@ -346,20 +428,26 @@ struct OAuth2Provider {
             do {
                 try validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an invalid scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an invalid scope")
             } catch ScopeError.unknown {
-                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope, description: "Request contained an unknown scope")
+                return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                         description: "Request contained an unknown scope")
             }
         }
 
         guard let userID = userManager.authenticateUser(username: username, password: password) else {
             log.warning("LOGIN WARNING: Invalid login attempt for user \(username)")
-            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant, description: "Request had invalid credentials")
+            return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
+                                     description: "Request had invalid credentials")
         }
 
         let expiryTime = 3600
+        let scopes = scopeString?.components(separatedBy: " ")
 
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID, scopes: scopeString?.components(separatedBy: " "), accessTokenExpiryTime: expiryTime)
+        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID,
+                                                                             scopes: scopes,
+                                                                             accessTokenExpiryTime: expiryTime)
 
         return try tokenResponse(accessToken: access, refreshToken: refresh, expires: expiryTime, scope: scopeString)
     }
@@ -403,7 +491,8 @@ struct OAuth2Provider {
         }
     }
 
-    private func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType, checkConfidentialClient: Bool = false) throws {
+    private func authenticateClient(clientID: String, clientSecret: String?,
+                                    grantType: OAuthFlowType, checkConfidentialClient: Bool = false) throws {
         guard let client = clientRetriever.getClient(clientID: clientID) else {
             throw ClientError.unauthorized
         }
@@ -437,7 +526,8 @@ struct OAuth2Provider {
         return try createResponseForToken(status: status, json: json)
     }
 
-    private func tokenResponse(accessToken: AccessToken, refreshToken: RefreshToken?, expires: Int, scope: String?) throws -> Response {
+    private func tokenResponse(accessToken: AccessToken, refreshToken: RefreshToken?,
+                               expires: Int, scope: String?) throws -> Response {
 
         var json = JSON()
         try json.set(OAuthResponseParameters.tokenType, "bearer")
@@ -464,8 +554,8 @@ struct OAuth2Provider {
         return response
     }
 
-    private func validateClient(id: String, responseType: String, redirectURI: String, scopes: [String]?) throws {
-        guard let client = clientRetriever.getClient(clientID: id) else {
+    private func validateClient(clientID: String, responseType: String, redirectURI: String, scopes: [String]?) throws {
+        guard let client = clientRetriever.getClient(clientID: clientID) else {
             throw AuthorizationError.invalidClientID
         }
 
@@ -489,7 +579,7 @@ struct OAuth2Provider {
             }
         }
 
-        try validateScope(clientID: id, scopes: scopes)
+        try validateScope(clientID: clientID, scopes: scopes)
 
         let redirectURI = URIParser.shared.parse(bytes: redirectURI.makeBytes())
 
@@ -500,7 +590,8 @@ struct OAuth2Provider {
         }
     }
 
-    private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String, state: String?) -> Response {
+    private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String,
+                                     state: String?) -> Response {
         var redirectString = "\(redirectURI)?error=\(errorType)&error_description=\(errorDescription)"
 
         if let state = state {

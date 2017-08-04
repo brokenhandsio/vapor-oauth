@@ -14,7 +14,9 @@ public final class Provider: Vapor.Provider {
         throw OAuthProviderError.configInitUnavailble
     }
 
-    public init(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager, clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(), userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil) {
+    public init(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager,
+                clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(),
+                userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil) {
 
         self.codeManager = codeManager
         self.tokenManager = tokenManager
@@ -28,7 +30,10 @@ public final class Provider: Vapor.Provider {
 
     public func boot(_ drop: Droplet) throws {
         let log = try drop.config.resolveLog()
-        let provider = OAuth2Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes, environment: drop.config.environment, log: log)
+        let provider = OAuth2Provider(codeManager: codeManager, tokenManager: tokenManager,
+                                      clientRetriever: clientRetriever, authorizeHandler: authorizeHandler,
+                                      userManager: userManager, validScopes: validScopes,
+                                      environment: drop.config.environment, log: log)
 
         provider.addRoutes(to: drop)
 

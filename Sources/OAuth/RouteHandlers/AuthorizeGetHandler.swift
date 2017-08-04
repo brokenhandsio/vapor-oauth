@@ -9,12 +9,65 @@ struct AuthorizeGetHandler {
 
     func handleRequest(request: Request) throws -> ResponseRepresentable {
 
-        guard let clientID = request.query?[OAuthRequestParameters.clientID]?.string else {
+        let (errorResponse, createdAuthRequestObject) = try validateRequest(request)
+
+        if let errorResponseReturned = errorResponse {
+            return errorResponseReturned
+        }
+
+        guard let authRequestObject = createdAuthRequestObject else {
+            throw Abort.serverError
+        }
+
+        do {
+            try clientValidator.validateClient(clientID: authRequestObject.clientID, responseType: authRequestObject.responseType,
+                                               redirectURI: authRequestObject.redirectURIString, scopes: authRequestObject.scopes)
+        } catch AuthorizationError.invalidClientID {
             return try authorizeHandler.handleAuthorizationError(.invalidClientID)
+        } catch AuthorizationError.invalidRedirectURI {
+            return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
+        } catch ScopeError.unknown {
+            return createErrorResponse(redirectURI: authRequestObject.redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
+                                       errorDescription: "scope+is+unknown",
+                                       state: authRequestObject.state)
+        } catch ScopeError.invalid {
+            return createErrorResponse(redirectURI: authRequestObject.redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
+                                       errorDescription: "scope+is+invalid",
+                                       state: authRequestObject.state)
+        } catch AuthorizationError.confidentialClientTokenGrant {
+            return createErrorResponse(redirectURI: authRequestObject.redirectURIString,
+                                       errorType: OAuthResponseParameters.ErrorType.unauthorizedClient,
+                                       errorDescription: "token+grant+disabled+for+confidential+clients",
+                                       state: authRequestObject.state)
+        } catch AuthorizationError.httpRedirectURI {
+            return try authorizeHandler.handleAuthorizationError(.httpRedirectURI)
+        }
+
+        let redirectURI = URIParser.shared.parse(bytes: authRequestObject.redirectURIString.makeBytes())
+        let csrfToken = try Random.bytes(count: 32).hexString
+
+        guard let session = request.session else {
+            throw Abort.badRequest
+        }
+
+        try session.data.set(SessionData.csrfToken, csrfToken)
+        let authorizationRequestObject = AuthorizationRequestObject(responseType: authRequestObject.responseType,
+                                                                    clientID: authRequestObject.clientID, redirectURI: redirectURI,
+                                                                    scope: authRequestObject.scopes, state: authRequestObject.state,
+                                                                    csrfToken: csrfToken)
+
+        return try authorizeHandler.handleAuthorizationRequest(request, authorizationRequestObject: authorizationRequestObject)
+    }
+
+    private func validateRequest(_ request: Request) throws -> (ResponseRepresentable?, AuthorizationGetRequestObject?) {
+        guard let clientID = request.query?[OAuthRequestParameters.clientID]?.string else {
+            return (try authorizeHandler.handleAuthorizationError(.invalidClientID), nil)
         }
 
         guard let redirectURIString = request.query?[OAuthRequestParameters.redirectURI]?.string else {
-            return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
+            return (try authorizeHandler.handleAuthorizationError(.invalidRedirectURI), nil)
         }
 
         let scopes: [String]
@@ -28,54 +81,25 @@ struct AuthorizeGetHandler {
         let state = request.query?[OAuthRequestParameters.state]?.string
 
         guard let responseType = request.query?[OAuthRequestParameters.responseType]?.string else {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
-                                       errorDescription: "Request+was+missing+the+response_type+parameter", state: state)
+            let errorResponse = createErrorResponse(redirectURI: redirectURIString,
+                                                    errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                                                    errorDescription: "Request+was+missing+the+response_type+parameter",
+                                                    state: state)
+            return (errorResponse, nil)
         }
 
         guard responseType == ResponseType.code || responseType == ResponseType.token else {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
-                                       errorDescription: "invalid+response+type", state: state)
+            let errorResponse = createErrorResponse(redirectURI: redirectURIString,
+                                                    errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                                                    errorDescription: "invalid+response+type", state: state)
+            return (errorResponse, nil)
         }
 
-        do {
-            try clientValidator.validateClient(clientID: clientID, responseType: responseType,
-                                               redirectURI: redirectURIString, scopes: scopes)
-        } catch AuthorizationError.invalidClientID {
-            return try authorizeHandler.handleAuthorizationError(.invalidClientID)
-        } catch AuthorizationError.invalidRedirectURI {
-            return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
-        } catch ScopeError.unknown {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
-                                       errorDescription: "scope+is+unknown", state: state)
-        } catch ScopeError.invalid {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
-                                       errorDescription: "scope+is+invalid", state: state)
-        } catch AuthorizationError.confidentialClientTokenGrant {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.unauthorizedClient,
-                                       errorDescription: "token+grant+disabled+for+confidential+clients", state: state)
-        } catch AuthorizationError.httpRedirectURI {
-            return try authorizeHandler.handleAuthorizationError(.httpRedirectURI)
-        }
+        let authRequestObject = AuthorizationGetRequestObject(clientID: clientID, redirectURIString: redirectURIString,
+                                                              scopes: scopes, state: state,
+                                                              responseType: responseType)
 
-        let redirectURI = URIParser.shared.parse(bytes: redirectURIString.makeBytes())
-
-        let csrfToken = try Random.bytes(count: 32).hexString
-
-        guard let session = request.session else {
-            throw Abort.badRequest
-        }
-
-        try session.data.set(SessionData.csrfToken, csrfToken)
-        let authorizationRequestObject = AuthorizationRequestObject(responseType: responseType, clientID: clientID,
-                                                                    redirectURI: redirectURI, scope: scopes, state: state,
-                                                                    csrfToken: csrfToken)
-
-        return try authorizeHandler.handleAuthorizationRequest(request, authorizationRequestObject: authorizationRequestObject)
+        return (nil, authRequestObject)
     }
 
     private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String,
@@ -88,4 +112,12 @@ struct AuthorizeGetHandler {
 
         return Response(redirect: redirectString)
     }
+}
+
+struct AuthorizationGetRequestObject {
+    let clientID: String
+    let redirectURIString: String
+    let scopes: [String]
+    let state: String?
+    let responseType: String
 }

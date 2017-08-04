@@ -13,7 +13,7 @@ Vapor OAuth supports the standard grant types:
 
 * Authorization Code
 * Client Credentials
-* Implcit Grant
+* Implicit Grant
 * Password Credentials
 
 For an excellent description on how the standard OAuth flows work, and what to expect when using and implementing them, have a look at https://www.oauth.com.
@@ -84,10 +84,10 @@ The Authorization Code flow is the most common flow used with OAuth. It is what 
 
 As well as implementing the Code Manager, Token Manager, and Client Retriever, the most important part to implement is the `AuthorizeHandler`. Your authorize handler is responsible for letting the user decide whether they should let an application have access to their account. It should be [clear and easy](https://www.oauth.com/oauth2-servers/authorization/the-authorization-interface/) to understand what is going on and should be clear what the application is requesting access to.
 
-It is your responsibility to ensure that the user is logged in and handling the case when they are not. An example implemntation for the authorize handler may look something like:
+It is your responsibility to ensure that the user is logged in and handling the case when they are not. An example implementation for the authorize handler may look something like:
 
 ```swift
-func handleAuthorizationRequest(_ request: Request, responseType: String, clientID: String, redirectURI: URI, scope: [String], state: String?, csrfToken: String) throws -> ResponseRepresentable {
+func handleAuthorizationRequest(_ request: Request, authorizationGetRequestObject: AuthorizationGetRequestObject) throws -> ResponseRepresentable {
     guard request.auth.isAuthenticated(FluentOAuthUser.self) else {
         let redirectCookie = Cookie(name: "OAuthRedirect", value: request.uri.description)
         let response = Response(redirect: "/login")
@@ -96,12 +96,13 @@ func handleAuthorizationRequest(_ request: Request, responseType: String, client
     }
 
     var parameters = Node([:], in: nil)
+    let client = clientRetriever.getClient(clientID: authorizationGetRequestObject.clientID)
 
-    try parameters.set("csrf_token", csrfToken)
-    try parameters.set("scopes", scope)
-    try parameters.set("client_name", clientName)
-    try parameters.set("client_image", clientImage)
-    try parameters.set("user", loggedInUser)
+    try parameters.set("csrf_token", authorizationGetRequestObject.csrfToken)
+    try parameters.set("scopes", authorizationGetRequestObject.scopes)
+    try parameters.set("client_name", client.clientName)
+    try parameters.set("client_image", client.clientImage)
+    try parameters.set("user", request.auth.user)
 
     return try view.make("authorizeApplication", parameters)
 }

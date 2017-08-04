@@ -3,6 +3,7 @@ import HTTP
 import URI
 
 class CapturingAuthoriseHandler: AuthorizeHandler {
+
     private(set) var request: Request?
     private(set) var responseType: String?
     private(set) var clientID: String?
@@ -11,14 +12,14 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
     private(set) var state: String?
     private(set) var csrfToken: String?
     
-    func handleAuthorizationRequest(_ request: Request, responseType: String, clientID: String, redirectURI: URI, scope: [String], state: String?, csrfToken: String) -> ResponseRepresentable {
+    func handleAuthorizationRequest(_ request: Request, authorizationRequestObject: AuthorizationRequestObject) throws -> ResponseRepresentable {
         self.request = request
-        self.responseType = responseType
-        self.clientID = clientID
-        self.redirectURI = redirectURI
-        self.scope = scope
-        self.state = state
-        self.csrfToken = csrfToken
+        self.responseType = authorizationRequestObject.responseType
+        self.clientID = authorizationRequestObject.clientID
+        self.redirectURI = authorizationRequestObject.redirectURI
+        self.scope = authorizationRequestObject.scope
+        self.state = authorizationRequestObject.state
+        self.csrfToken = authorizationRequestObject.csrfToken
         
         return "Allow/Deny"
     }

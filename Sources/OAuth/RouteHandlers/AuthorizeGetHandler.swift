@@ -71,10 +71,11 @@ struct AuthorizeGetHandler {
         }
 
         try session.data.set(SessionData.csrfToken, csrfToken)
+        let authorizationRequestObject = AuthorizationRequestObject(responseType: responseType, clientID: clientID,
+                                                                    redirectURI: redirectURI, scope: scopes, state: state,
+                                                                    csrfToken: csrfToken)
 
-        return try authorizeHandler.handleAuthorizationRequest(request, responseType: responseType, clientID: clientID,
-                                                               redirectURI: redirectURI, scope: scopes, state: state,
-                                                               csrfToken: csrfToken)
+        return try authorizeHandler.handleAuthorizationRequest(request, authorizationRequestObject: authorizationRequestObject)
     }
 
     private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String,

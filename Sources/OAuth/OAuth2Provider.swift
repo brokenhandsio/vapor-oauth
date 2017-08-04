@@ -1,20 +1,19 @@
 import Vapor
 import HTTP
 import AuthProvider
-import Crypto
 
 struct OAuth2Provider {
 
     let codeManager: CodeManager
     let tokenManager: TokenManager
     let clientRetriever: ClientRetriever
-    let authorizeHandler: AuthorizeHandler
     let userManager: UserManager
     let log: LogProtocol
     let tokenAuthenticator: TokenAuthenticator
-    let authorizePostHandler: AuthorizePostHandler
     let scopeValidator: ScopeValidator
     let clientValidator: ClientValidator
+    let authorizePostHandler: AuthorizePostHandler
+    let authorizeGetHandler: AuthorizeGetHandler
 
     init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
          authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
@@ -22,7 +21,6 @@ struct OAuth2Provider {
         self.codeManager = codeManager
         self.tokenManager = tokenManager
         self.clientRetriever = clientRetriever
-        self.authorizeHandler = authorizeHandler
         self.userManager = userManager
         self.log = log
 
@@ -30,82 +28,13 @@ struct OAuth2Provider {
         scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
         clientValidator = ClientValidator(clientRetriever: clientRetriever, scopeValidator: scopeValidator, environment: environment)
         authorizePostHandler = AuthorizePostHandler(tokenManager: tokenManager, codeManager: codeManager, clientValidator: clientValidator)
+        authorizeGetHandler = AuthorizeGetHandler(authorizeHandler: authorizeHandler, clientValidator: clientValidator)
     }
 
     func addRoutes(to router: RouteBuilder) {
-        router.get("oauth", "authorize", handler: authHandler)
+        router.get("oauth", "authorize", handler: authorizeGetHandler.handleRequest)
         router.post("oauth", "authorize", handler: authorizePostHandler.handleRequest)
         router.post("oauth", "token", handler: tokenPostHandler)
-    }
-
-    func authHandler(request: Request) throws -> ResponseRepresentable {
-
-        guard let clientID = request.query?[OAuthRequestParameters.clientID]?.string else {
-            return try authorizeHandler.handleAuthorizationError(.invalidClientID)
-        }
-
-        guard let redirectURIString = request.query?[OAuthRequestParameters.redirectURI]?.string else {
-            return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
-        }
-
-        let scopes: [String]
-
-        if let scopeQuery = request.query?[OAuthRequestParameters.scope]?.string {
-            scopes = scopeQuery.components(separatedBy: " ")
-        } else {
-            scopes = []
-        }
-
-        let state = request.query?[OAuthRequestParameters.state]?.string
-
-        guard let responseType = request.query?[OAuthRequestParameters.responseType]?.string else {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
-                                       errorDescription: "Request+was+missing+the+response_type+parameter", state: state)
-        }
-
-        guard responseType == ResponseType.code || responseType == ResponseType.token else {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidRequest,
-                                       errorDescription: "invalid+response+type", state: state)
-        }
-
-        do {
-            try clientValidator.validateClient(clientID: clientID, responseType: responseType,
-                                               redirectURI: redirectURIString, scopes: scopes)
-        } catch AuthorizationError.invalidClientID {
-            return try authorizeHandler.handleAuthorizationError(.invalidClientID)
-        } catch AuthorizationError.invalidRedirectURI {
-            return try authorizeHandler.handleAuthorizationError(.invalidRedirectURI)
-        } catch ScopeError.unknown {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
-                                       errorDescription: "scope+is+unknown", state: state)
-        } catch ScopeError.invalid {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.invalidScope,
-                                       errorDescription: "scope+is+invalid", state: state)
-        } catch AuthorizationError.confidentialClientTokenGrant {
-            return createErrorResponse(redirectURI: redirectURIString,
-                                       errorType: OAuthResponseParameters.ErrorType.unauthorizedClient,
-                                       errorDescription: "token+grant+disabled+for+confidential+clients", state: state)
-        } catch AuthorizationError.httpRedirectURI {
-            return try authorizeHandler.handleAuthorizationError(.httpRedirectURI)
-        }
-
-        let redirectURI = URIParser.shared.parse(bytes: redirectURIString.makeBytes())
-
-        let csrfToken = try Random.bytes(count: 32).hexString
-
-        guard let session = request.session else {
-            throw Abort.badRequest
-        }
-
-        try session.data.set(SessionData.csrfToken, csrfToken)
-
-        return try authorizeHandler.handleAuthorizationRequest(request, responseType: responseType, clientID: clientID,
-                                                               redirectURI: redirectURI, scope: scopes, state: state,
-                                                               csrfToken: csrfToken)
     }
 
     func tokenPostHandler(request: Request) throws -> Response {
@@ -142,8 +71,8 @@ struct OAuth2Provider {
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: clientSecret,
-                                   grantType: .refresh, checkConfidentialClient: true)
+            try clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
+                                                   grantType: .refresh, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
             return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                      description: "Request had invalid client credentials", status: .unauthorized)
@@ -214,8 +143,8 @@ struct OAuth2Provider {
         }
 
         do {
-            try authenticateClient(clientID: clientID, clientSecret: clientSecret,
-                                   grantType: .clientCredentials, checkConfidentialClient: true)
+            try clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
+                                                   grantType: .clientCredentials, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
             return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                      description: "Request had invalid client credentials", status: .unauthorized)
@@ -263,9 +192,9 @@ struct OAuth2Provider {
         }
 
         do {
-            try authenticateClient(clientID: clientID,
-                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
-                                   grantType: .authorization)
+            try clientValidator.authenticateClient(clientID: clientID,
+                                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                                   grantType: .authorization)
         } catch {
             return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                      description: "Request had invalid client credentials", status: .unauthorized)
@@ -307,9 +236,9 @@ struct OAuth2Provider {
         }
 
         do {
-            try authenticateClient(clientID: clientID,
-                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
-                                   grantType: .password)
+            try clientValidator.authenticateClient(clientID: clientID,
+                                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                                   grantType: .password)
         } catch ClientError.unauthorized {
             return try tokenResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                      description: "Request had invalid client credentials", status: .unauthorized)
@@ -364,33 +293,6 @@ struct OAuth2Provider {
         return true
     }
 
-    private func authenticateClient(clientID: String, clientSecret: String?,
-                                    grantType: OAuthFlowType, checkConfidentialClient: Bool = false) throws {
-        guard let client = clientRetriever.getClient(clientID: clientID) else {
-            throw ClientError.unauthorized
-        }
-
-        guard clientSecret == client.clientSecret else {
-            throw ClientError.unauthorized
-        }
-
-        guard client.allowedGrantTypes?.contains(grantType) ?? true else {
-            throw Abort(.forbidden)
-        }
-
-        if grantType == .password {
-            guard client.firstParty else {
-                throw ClientError.notFirstParty
-            }
-        }
-
-        if checkConfidentialClient {
-            guard client.confidentialClient ?? false else {
-                throw ClientError.notConfidential
-            }
-        }
-    }
-
     private func tokenResponse(error: String, description: String, status: Status = .badRequest) throws -> Response {
         var json = JSON()
         try json.set(OAuthResponseParameters.error, error)
@@ -425,16 +327,5 @@ struct OAuth2Provider {
         response.headers[.cacheControl] = "no-store"
 
         return response
-    }
-
-    private func createErrorResponse(redirectURI: String, errorType: String, errorDescription: String,
-                                     state: String?) -> Response {
-        var redirectString = "\(redirectURI)?error=\(errorType)&error_description=\(errorDescription)"
-
-        if let state = state {
-            redirectString += "&state=\(state)"
-        }
-
-        return Response(redirect: redirectString)
     }
 }

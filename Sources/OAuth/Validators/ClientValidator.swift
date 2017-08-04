@@ -41,6 +41,33 @@ struct ClientValidator {
             }
         }
     }
+
+    func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType,
+                            checkConfidentialClient: Bool = false) throws {
+        guard let client = clientRetriever.getClient(clientID: clientID) else {
+            throw ClientError.unauthorized
+        }
+
+        guard clientSecret == client.clientSecret else {
+            throw ClientError.unauthorized
+        }
+
+        guard client.allowedGrantTypes?.contains(grantType) ?? true else {
+            throw Abort(.forbidden)
+        }
+
+        if grantType == .password {
+            guard client.firstParty else {
+                throw ClientError.notFirstParty
+            }
+        }
+
+        if checkConfidentialClient {
+            guard client.confidentialClient ?? false else {
+                throw ClientError.notConfidential
+            }
+        }
+    }
 }
 
 public enum ClientError: Error {

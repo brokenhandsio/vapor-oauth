@@ -14,6 +14,7 @@ struct OAuth2Provider {
     let authorizePostHandler: AuthorizePostHandler
     let authorizeGetHandler: AuthorizeGetHandler
     let tokenHandler: TokenHandler
+    let tokenIntrospectionHandler: TokenIntrospectionHandler
 
     init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
          authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
@@ -30,12 +31,15 @@ struct OAuth2Provider {
         authorizeGetHandler = AuthorizeGetHandler(authorizeHandler: authorizeHandler, clientValidator: clientValidator)
         tokenHandler = TokenHandler(clientValidator: clientValidator, tokenManager: tokenManager, scopeValidator: scopeValidator,
                                     codeManager: codeManager, userManager: userManager, log: log)
+        tokenIntrospectionHandler = TokenIntrospectionHandler()
+        
     }
 
     func addRoutes(to router: RouteBuilder) {
         router.get("oauth", "authorize", handler: authorizeGetHandler.handleRequest)
         router.post("oauth", "authorize", handler: authorizePostHandler.handleRequest)
         router.post("oauth", "token", handler: tokenHandler.handleRequest)
+        router.post("oauth", "token_info", handler: tokenIntrospectionHandler.handleRequest)
     }
 
 }

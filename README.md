@@ -9,6 +9,8 @@ Vapor OAuth is an OAuth2 Provider Library written for Vapor. You can integrate t
 
 It follows both [RFC 6749](https://tools.ietf.org/html/rfc6749) and [RFC6750](https://tools.ietf.org/html/rfc6749) and there is an extensive test suite to make sure it adheres to the specification.
 
+It also implements the [RFC 7662](https://tools.ietf.org/html/rfc7662) specification for Token Introspection, which is useful for microservices with a shared, central authorization server.
+
 Vapor OAuth supports the standard grant types:
 
 * Authorization Code

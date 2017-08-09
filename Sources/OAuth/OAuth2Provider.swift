@@ -32,7 +32,7 @@ struct OAuth2Provider {
         tokenHandler = TokenHandler(clientValidator: clientValidator, tokenManager: tokenManager, scopeValidator: scopeValidator,
                                     codeManager: codeManager, userManager: userManager, log: log)
         tokenIntrospectionHandler = TokenIntrospectionHandler(clientValidator: clientValidator)
-        
+
     }
 
     func addRoutes(to router: RouteBuilder) {

@@ -1,9 +1,11 @@
 import HTTP
 import JSON
+import Foundation
 
 struct TokenIntrospectionHandler {
 
     let clientValidator: ClientValidator
+    let tokenManager: TokenManager
 
     func handleRequest(_ req: Request) throws -> ResponseRepresentable {
 
@@ -29,13 +31,29 @@ struct TokenIntrospectionHandler {
                                            errorDescription: "Request had invalid client credentials")
         }
 
-        guard let token = req.data[OAuthRequestParameters.token]?.string else {
+        guard let tokenString = req.data[OAuthRequestParameters.token]?.string else {
             return try createErrorResponse(status: .badRequest,
                                            errorMessage: OAuthResponseParameters.ErrorType.missingToken,
                                            errorDescription: "The token parameter is required")
         }
 
+        guard let token = tokenManager.getAccessToken(tokenString) else {
+            return try createTokenResponse(active: false)
+        }
+
+        guard token.expiryTime >= Date() else {
+            return try createTokenResponse(active: false)
+        }
+
         return "OK"
+    }
+
+    func createTokenResponse(active: Bool) throws -> Response {
+        var json = JSON()
+        try json.set("active", false)
+        let response = Response(status: .ok)
+        response.json = json
+        return response
     }
 
     func createErrorResponse(status: Status, errorMessage: String, errorDescription: String) throws -> Response {

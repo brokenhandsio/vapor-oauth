@@ -31,7 +31,7 @@ struct OAuth2Provider {
         authorizeGetHandler = AuthorizeGetHandler(authorizeHandler: authorizeHandler, clientValidator: clientValidator)
         tokenHandler = TokenHandler(clientValidator: clientValidator, tokenManager: tokenManager, scopeValidator: scopeValidator,
                                     codeManager: codeManager, userManager: userManager, log: log)
-        tokenIntrospectionHandler = TokenIntrospectionHandler(clientValidator: clientValidator)
+        tokenIntrospectionHandler = TokenIntrospectionHandler(clientValidator: clientValidator, tokenManager: tokenManager)
 
     }
 

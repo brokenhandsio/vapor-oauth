@@ -1,6 +1,7 @@
 import XCTest
 import OAuth
 import Vapor
+import Foundation
 
 class TokenIntrospectionTests: XCTestCase {
     // MARK: - All Tests
@@ -12,6 +13,8 @@ class TokenIntrospectionTests: XCTestCase {
         ("testCorrectErrorWhenClientIDNotValid", testCorrectErrorWhenClientIDNotValid),
         ("testCorrectErrorWhenClientDoesNotAuthenticate", testCorrectErrorWhenClientDoesNotAuthenticate),
         ("testCorrectErrorIfClientSecretNotSent", testCorrectErrorIfClientSecretNotSent),
+        ("testThatInvalidTokenReturnsInactive", testThatInvalidTokenReturnsInactive),
+        ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
         ]
     
     // MARK: - Properties
@@ -118,6 +121,33 @@ class TokenIntrospectionTests: XCTestCase {
         XCTAssertEqual(response.status, .badRequest)
         XCTAssertEqual(responseJSON["error"]?.string, "invalid_request")
         XCTAssertEqual(responseJSON["error_description"], "Request was missing the 'client_secret' parameter")
+    }
+    
+    func testThatInvalidTokenReturnsInactive() throws {
+        let response = try getInfoResponse(token: "UNKNOWN_TOKEN")
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, false)
+    }
+    
+    func testThatExpiredTokenReturnsInactive() throws {
+        let tokenString = "EXPIRED_TOKEN"
+        let expiredToken = AccessToken(tokenString: tokenString, clientID: testClientID, userID: nil, expiryTime: Date().addingTimeInterval(-60))
+        fakeTokenManager.accessTokens[tokenString] = expiredToken
+        let response = try getInfoResponse(token: tokenString)
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, false)
     }
     
     // MARK: - Helper method

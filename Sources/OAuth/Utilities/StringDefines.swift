@@ -12,6 +12,7 @@ struct OAuthRequestParameters {
     static let password = "password"
     static let usernname = "username"
     static let csrfToken = "csrfToken"
+    static let token = "token"
 }
 
 struct OAuthResponseParameters {
@@ -31,6 +32,7 @@ struct OAuthResponseParameters {
         static let unauthorizedClient = "unauthorized_client"
         static let unsupportedGrant = "unsupported_grant_type"
         static let invalidGrant = "invalid_grant"
+        static let missingToken = "missing_token"
     }
 }
 

@@ -4,4 +4,5 @@ public enum OAuthFlowType: String {
     case password = "password"
     case clientCredentials = "client_credentials"
     case refresh = "refresh_token"
+    case tokenIntrospection = "token_introspection"
 }

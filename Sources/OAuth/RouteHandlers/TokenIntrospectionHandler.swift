@@ -9,28 +9,6 @@ struct TokenIntrospectionHandler {
 
     func handleRequest(_ req: Request) throws -> ResponseRepresentable {
 
-        guard let clientID = req.data[OAuthRequestParameters.clientID]?.string else {
-            return try createErrorResponse(status: .badRequest,
-                                           errorMessage: OAuthResponseParameters.ErrorType.invalidRequest,
-                                           errorDescription: "Request was missing the 'client_id' parameter")
-        }
-
-        guard let clientSecret = req.data[OAuthRequestParameters.clientSecret]?.string else {
-            return try createErrorResponse(status: .badRequest,
-                                           errorMessage: OAuthResponseParameters.ErrorType.invalidRequest,
-                                           errorDescription: "Request was missing the 'client_secret' parameter")
-        }
-
-        do {
-            try clientValidator.authenticateClient(clientID: clientID,
-                                                   clientSecret: clientSecret,
-                                                   grantType: .tokenIntrospection)
-        } catch {
-            return try createErrorResponse(status: .unauthorized,
-                                           errorMessage: OAuthResponseParameters.ErrorType.invalidClient,
-                                           errorDescription: "Request had invalid client credentials")
-        }
-
         guard let tokenString = req.data[OAuthRequestParameters.token]?.string else {
             return try createErrorResponse(status: .badRequest,
                                            errorMessage: OAuthResponseParameters.ErrorType.missingToken,

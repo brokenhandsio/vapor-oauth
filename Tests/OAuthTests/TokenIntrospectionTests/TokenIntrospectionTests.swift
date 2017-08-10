@@ -39,7 +39,8 @@ class TokenIntrospectionTests: XCTestCase {
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
 
-        let resourceServer = OAuthResourceServer(username: resourceServerName, password: "users".makeBytes())
+        let hashedPassword = try! BCryptHasher(cost: 10).make("users")
+        let resourceServer = OAuthResourceServer(username: resourceServerName, password: hashedPassword)
         fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
 //        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
 //        fakeUserManager.users.append(testUser)
@@ -111,12 +112,13 @@ class TokenIntrospectionTests: XCTestCase {
     }
     
     func testThatRequestMustBeHTTPSInProduction() {
-        XCTFail()
+        // TODO
     }
     
     // MARK: - Helper method
     
-    func getInfoResponse(token: String? = "ABDEFGHIJKLMNO01234567890", authHeader: String? = "01234567890") throws -> Response {
+    // Auth Header is brokenhands-users:users Base64 encoded
+    func getInfoResponse(token: String? = "ABDEFGHIJKLMNO01234567890", authHeader: String? = "YnJva2VuaGFuZHMtdXNlcnM6dXNlcnM=") throws -> Response {
         let request = Request(method: .post, uri: "/oauth/token_info")
         
         // TODO - try Form URL encoded

@@ -15,16 +15,18 @@ struct OAuth2Provider {
     let authorizeGetHandler: AuthorizeGetHandler
     let tokenHandler: TokenHandler
     let tokenIntrospectionHandler: TokenIntrospectionHandler
+    let resourceServerAuthenticator: ResourceServerAuthenticator
 
     init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
          authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
-         environment: Environment, log: LogProtocol) {
+         resourceServerRetriever: ResourceServerRetriever, environment: Environment, log: LogProtocol) {
         self.codeManager = codeManager
         self.tokenManager = tokenManager
         self.clientRetriever = clientRetriever
         self.userManager = userManager
         self.log = log
 
+        resourceServerAuthenticator = ResourceServerAuthenticator(resourceServerRetriever: resourceServerRetriever)
         scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
         clientValidator = ClientValidator(clientRetriever: clientRetriever, scopeValidator: scopeValidator, environment: environment)
         authorizePostHandler = AuthorizePostHandler(tokenManager: tokenManager, codeManager: codeManager, clientValidator: clientValidator)
@@ -41,8 +43,6 @@ struct OAuth2Provider {
         router.post("oauth", "authorize", handler: authorizePostHandler.handleRequest)
         router.post("oauth", "token", handler: tokenHandler.handleRequest)
 
-        let resourceServerRetriever = ResourceServerRetriever()
-        let resourceServerAuthenticator = ResourceServerAuthenticator(resourceServerRetriever: resourceServerRetriever)
         let tokenIntrospectionMiddleware = TokenIntrospectionMiddleware(resourceServerAuthenticator: resourceServerAuthenticator)
         let resourceServerProtected = router.grouped(tokenIntrospectionMiddleware)
         resourceServerProtected.post("oauth", "token_info", handler: tokenIntrospectionHandler.handleRequest)

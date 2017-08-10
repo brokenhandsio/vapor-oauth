@@ -21,6 +21,7 @@ class TokenIntrospectionTests: XCTestCase {
     var drop: Droplet!
 //    let fakeUserManager = FakeUserManager()
     let fakeTokenManager = FakeTokenManager()
+    let fakeResourceServerRetriever = FakeResourceServerRetriever()
 //    let capturingLogger = CapturingLogger()
     let testClientID = "ABCDEF"
     let testClientSecret = "01234567890"
@@ -31,12 +32,15 @@ class TokenIntrospectionTests: XCTestCase {
 //    let refreshToken = "ABCDEFGHIJLMNOP1234567890"
     let scope1 = "email"
     let scope2 = "create"
+    let resourceServerName = "brokenhands-users"
     
     // MARK: - Overrides
     
     override func setUp() {
-        drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2])
+        drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
 
+        let resourceServer = OAuthResourceServer(username: resourceServerName, password: "users".makeBytes())
+        fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
 //        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
 //        fakeUserManager.users.append(testUser)
 //        fakeTokenManager.accessTokenToReturn = accessToken

@@ -16,9 +16,3 @@ struct ResourceServerAuthenticator {
         }
     }
 }
-
-struct ResourceServerRetriever {
-    func getServer(_ username: String) -> OAuthResourceServer? {
-        return nil
-    }
-}

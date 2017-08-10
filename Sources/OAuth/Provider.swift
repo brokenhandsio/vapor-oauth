@@ -9,6 +9,7 @@ public final class Provider: Vapor.Provider {
     let authorizeHandler: AuthorizeHandler
     let userManager: UserManager
     let validScopes: [String]?
+    let resourceServerRetriever: ResourceServerRetriever
 
     public init(config: Config) throws {
         throw OAuthProviderError.configInitUnavailble
@@ -16,7 +17,8 @@ public final class Provider: Vapor.Provider {
 
     public init(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager,
                 clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(),
-                userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil) {
+                userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil,
+                resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever()) {
 
         self.codeManager = codeManager
         self.tokenManager = tokenManager
@@ -24,6 +26,7 @@ public final class Provider: Vapor.Provider {
         self.authorizeHandler = authorizeHandler
         self.userManager = userManager
         self.validScopes = validScopes
+        self.resourceServerRetriever = resourceServerRetriever
     }
 
     public func boot(_ config: Config) throws { }
@@ -33,6 +36,7 @@ public final class Provider: Vapor.Provider {
         let provider = OAuth2Provider(codeManager: codeManager, tokenManager: tokenManager,
                                       clientRetriever: clientRetriever, authorizeHandler: authorizeHandler,
                                       userManager: userManager, validScopes: validScopes,
+                                      resourceServerRetriever: resourceServerRetriever,
                                       environment: drop.config.environment, log: log)
 
         provider.addRoutes(to: drop)

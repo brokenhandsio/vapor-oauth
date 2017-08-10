@@ -6,7 +6,7 @@ import Node
 
 class TestDataBuilder
 {
-    static func getOAuthDroplet(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager = StubTokenManager(), clientRetriever: ClientRetriever = FakeClientGetter(), userManager: UserManager = EmptyUserManager(), authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(), validScopes: [String]? = nil, environment: Environment? = nil, log: CapturingLogger? = nil, sessions: FakeSessions? = nil) throws -> Droplet {
+    static func getOAuthDroplet(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager = StubTokenManager(), clientRetriever: ClientRetriever = FakeClientGetter(), userManager: UserManager = EmptyUserManager(), authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(), validScopes: [String]? = nil, resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(), environment: Environment? = nil, log: CapturingLogger? = nil, sessions: FakeSessions? = nil) throws -> Droplet {
         var config = Config([:])
         
         if let environment = environment {
@@ -20,7 +20,7 @@ class TestDataBuilder
             try config.set("droplet.log", "capturing-log")
         }
         
-        let provider = OAuth.Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes)
+        let provider = OAuth.Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes, resourceServerRetriever: resourceServerRetriever)
         
         try config.addProvider(provider)
         

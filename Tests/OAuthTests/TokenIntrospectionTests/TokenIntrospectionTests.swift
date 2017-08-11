@@ -18,23 +18,20 @@ class TokenIntrospectionTests: XCTestCase {
         ("testThatValidTokenReturnsActive", testThatValidTokenReturnsActive),
         ("testThatScopeReturnedInReponseIfTokenHasScope", testThatScopeReturnedInReponseIfTokenHasScope),
         ("testCliendIDReturnedInTokenResponse", testCliendIDReturnedInTokenResponse),
+        ("testUsernameReturnedInTokenResponseIfTokenHasAUser", testUsernameReturnedInTokenResponseIfTokenHasAUser),
+        ("testTokenExpiryReturnedInResponse", testTokenExpiryReturnedInResponse),
         ]
     
     
     // MARK: - Properties
     
     var drop: Droplet!
-//    let fakeUserManager = FakeUserManager()
     let fakeTokenManager = FakeTokenManager()
+    let fakeUserManager = FakeUserManager()
     let fakeResourceServerRetriever = FakeResourceServerRetriever()
-//    let capturingLogger = CapturingLogger()
     let testClientID = "ABCDEF"
     let testClientSecret = "01234567890"
-//    let testUsername = "testUser"
-//    let testPassword = "testPassword"
-//    let testUserID: Identifier = "ABCD-FJUH-31232"
     let accessToken = "ABDEFGHIJKLMNO01234567890"
-//    let refreshToken = "ABCDEFGHIJLMNOP1234567890"
     let scope1 = "email"
     let scope2 = "create"
     let resourceServerName = "brokenhands-users"
@@ -44,19 +41,13 @@ class TokenIntrospectionTests: XCTestCase {
     // MARK: - Overrides
     
     override func setUp() {
-        drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
+        drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, userManager: fakeUserManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
 
         let resourceServer = OAuthResourceServer(username: resourceServerName, password: resourceServerPassword.makeBytes())
         fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
         
         let validToken = AccessToken(tokenString: accessToken, clientID: clientID, userID: nil, expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[accessToken] = validToken
-        
-
-//        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
-//        fakeUserManager.users.append(testUser)
-//        fakeTokenManager.accessTokenToReturn = accessToken
-//        fakeTokenManager.refreshTokenToReturn = refreshToken
     }
     
     // MARK: - Tests
@@ -176,6 +167,45 @@ class TokenIntrospectionTests: XCTestCase {
         XCTAssertEqual(response.status, .ok)
         XCTAssertEqual(responseJSON["active"]?.bool, true)
         XCTAssertEqual(responseJSON["client_id"]?.string, clientID)
+    }
+    
+    func testUsernameReturnedInTokenResponseIfTokenHasAUser() throws {
+        let userID: Identifier = 123
+        let username = "hansolo"
+        let tokenString = "VALID_TOKEN"
+        let validToken = AccessToken(tokenString: tokenString, clientID: clientID, userID: userID, expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[tokenString] = validToken
+        let newUser = OAuthUser(userID: userID, username: username, emailAddress: "han@therebelalliance.com", password: "leia".makeBytes())
+        fakeUserManager.users.append(newUser)
+        
+        let response = try getInfoResponse(token: tokenString)
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, true)
+        XCTAssertEqual(responseJSON["username"]?.string, username)
+    }
+    
+    func testTokenExpiryReturnedInResponse() throws {
+        let tokenString = "VALID_TOKEN"
+        let expiryDate = Date().addingTimeInterval(60)
+        let validToken = AccessToken(tokenString: tokenString, clientID: clientID, userID: nil, expiryTime: expiryDate)
+        fakeTokenManager.accessTokens[tokenString] = validToken
+        
+        let response = try getInfoResponse(token: tokenString)
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, true)
+        XCTAssertEqual(responseJSON["exp"]?.int, Int(expiryDate.timeIntervalSince1970))
     }
     
     // MARK: - Helper method

@@ -4,13 +4,8 @@ import AuthProvider
 
 struct OAuth2Provider {
 
-    let codeManager: CodeManager
     let tokenManager: TokenManager
-    let clientRetriever: ClientRetriever
     let userManager: UserManager
-    let log: LogProtocol
-    let scopeValidator: ScopeValidator
-    let clientValidator: ClientValidator
     let authorizePostHandler: AuthorizePostHandler
     let authorizeGetHandler: AuthorizeGetHandler
     let tokenHandler: TokenHandler
@@ -20,22 +15,18 @@ struct OAuth2Provider {
     init(codeManager: CodeManager, tokenManager: TokenManager, clientRetriever: ClientRetriever,
          authorizeHandler: AuthorizeHandler, userManager: UserManager, validScopes: [String]?,
          resourceServerRetriever: ResourceServerRetriever, environment: Environment, log: LogProtocol) {
-        self.codeManager = codeManager
         self.tokenManager = tokenManager
-        self.clientRetriever = clientRetriever
         self.userManager = userManager
-        self.log = log
 
         resourceServerAuthenticator = ResourceServerAuthenticator(resourceServerRetriever: resourceServerRetriever)
-        scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
-        clientValidator = ClientValidator(clientRetriever: clientRetriever, scopeValidator: scopeValidator, environment: environment)
+        let scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
+        let clientValidator = ClientValidator(clientRetriever: clientRetriever, scopeValidator: scopeValidator, environment: environment)
         authorizePostHandler = AuthorizePostHandler(tokenManager: tokenManager, codeManager: codeManager, clientValidator: clientValidator)
         authorizeGetHandler = AuthorizeGetHandler(authorizeHandler: authorizeHandler, clientValidator: clientValidator)
         tokenHandler = TokenHandler(clientValidator: clientValidator, tokenManager: tokenManager, scopeValidator: scopeValidator,
                                     codeManager: codeManager, userManager: userManager, log: log)
-
-        tokenIntrospectionHandler = TokenIntrospectionHandler(clientValidator: clientValidator, tokenManager: tokenManager)
-
+        tokenIntrospectionHandler = TokenIntrospectionHandler(clientValidator: clientValidator, tokenManager: tokenManager,
+                                                              userManager: userManager)
     }
 
     func addRoutes(to router: RouteBuilder) {

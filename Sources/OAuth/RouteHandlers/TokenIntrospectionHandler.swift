@@ -6,6 +6,7 @@ struct TokenIntrospectionHandler {
 
     let clientValidator: ClientValidator
     let tokenManager: TokenManager
+    let userManager: UserManager
 
     func handleRequest(_ req: Request) throws -> ResponseRepresentable {
 
@@ -16,19 +17,28 @@ struct TokenIntrospectionHandler {
         }
 
         guard let token = tokenManager.getAccessToken(tokenString) else {
-            return try createTokenResponse(active: false, clientID: nil)
+            return try createTokenResponse(active: false, expiryDate: nil, clientID: nil)
         }
 
         guard token.expiryTime >= Date() else {
-            return try createTokenResponse(active: false, clientID: nil)
+            return try createTokenResponse(active: false, expiryDate: nil, clientID: nil)
         }
 
         let scopes = token.scopes?.joined(separator: " ")
+        var username: String? = nil
 
-        return try createTokenResponse(active: true, clientID: token.clientID, scopes: scopes)
+        if let userID = token.userID {
+            if let user = userManager.getUser(userID: userID) {
+                username = user.username
+            }
+        }
+
+        return try createTokenResponse(active: true, expiryDate: token.expiryTime, clientID: token.clientID,
+                                       scopes: scopes, username: username)
     }
 
-    func createTokenResponse(active: Bool, clientID: String?, scopes: String? = nil) throws -> Response {
+    func createTokenResponse(active: Bool, expiryDate: Date?, clientID: String?, scopes: String? = nil,
+                             username: String? = nil) throws -> Response {
         var json = JSON()
         try json.set(OAuthResponseParameters.active, active)
 
@@ -38,6 +48,14 @@ struct TokenIntrospectionHandler {
 
         if let scopes = scopes {
             try json.set(OAuthResponseParameters.scope, scopes)
+        }
+
+        if let username = username {
+            try json.set(OAuthResponseParameters.username, username)
+        }
+
+        if let expiryDate = expiryDate {
+            try json.set(OAuthResponseParameters.expiry, Int(expiryDate.timeIntervalSince1970))
         }
 
         let response = Response(status: .ok)

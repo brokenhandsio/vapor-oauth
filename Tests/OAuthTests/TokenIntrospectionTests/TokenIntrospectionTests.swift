@@ -13,7 +13,6 @@ class TokenIntrospectionTests: XCTestCase {
         ("testCorrectErrorWhenInvalidAuthorisationSupplied", testCorrectErrorWhenInvalidAuthorisationSupplied),
         ("testThatInvalidTokenReturnsInactive", testThatInvalidTokenReturnsInactive),
         ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
-        ("testThatRequestMustBeHTTPSInProduction", testThatRequestMustBeHTTPSInProduction),
         ]
     
     // MARK: - Properties
@@ -109,10 +108,6 @@ class TokenIntrospectionTests: XCTestCase {
         
         XCTAssertEqual(response.status, .ok)
         XCTAssertEqual(responseJSON["active"]?.bool, false)
-    }
-    
-    func testThatRequestMustBeHTTPSInProduction() {
-        // TODO
     }
     
     // MARK: - Helper method

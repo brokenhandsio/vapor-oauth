@@ -132,3 +132,7 @@ Note that if you are using the password flow, as per [the specification](https:/
 ## Client Credentials Grant
 
 Client Credentials is a userless flow and is designed for servers accessing other servers without the need for a user. Access is granted based upon the authentication of the client requesting access.
+
+## Token Introspection
+
+**Note:** as per [the spec](https://tools.ietf.org/html/rfc7662#section-4) - the token introspection endpoint MUST be protected by HTTPS - this means the server must be behind a TLS certificate (commonly known as SSL). Vapor OAuth leaves this up to the integrating library to implement. 

@@ -17,7 +17,9 @@ class TokenIntrospectionTests: XCTestCase {
         ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
         ("testThatValidTokenReturnsActive", testThatValidTokenReturnsActive),
         ("testThatScopeReturnedInReponseIfTokenHasScope", testThatScopeReturnedInReponseIfTokenHasScope),
+        ("testCliendIDReturnedInTokenResponse", testCliendIDReturnedInTokenResponse),
         ]
+    
     
     // MARK: - Properties
     
@@ -37,6 +39,7 @@ class TokenIntrospectionTests: XCTestCase {
     let scope2 = "create"
     let resourceServerName = "brokenhands-users"
     let resourceServerPassword = "users"
+    let clientID = "some-client"
     
     // MARK: - Overrides
     
@@ -45,6 +48,11 @@ class TokenIntrospectionTests: XCTestCase {
 
         let resourceServer = OAuthResourceServer(username: resourceServerName, password: resourceServerPassword.makeBytes())
         fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
+        
+        let validToken = AccessToken(tokenString: accessToken, clientID: clientID, userID: nil, expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[accessToken] = validToken
+        
+
 //        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
 //        fakeUserManager.users.append(testUser)
 //        fakeTokenManager.accessTokenToReturn = accessToken
@@ -129,11 +137,7 @@ class TokenIntrospectionTests: XCTestCase {
     }
     
     func testThatValidTokenReturnsActive() throws {
-        let tokenString = "VALID_TOKEN"
-        let validToken = AccessToken(tokenString: tokenString, clientID: "some-client", userID: nil, expiryTime: Date().addingTimeInterval(60))
-        fakeTokenManager.accessTokens[tokenString] = validToken
-        
-        let response = try getInfoResponse(token: tokenString)
+        let response = try getInfoResponse()
         
         guard let responseJSON = response.json else {
             XCTFail()
@@ -146,7 +150,7 @@ class TokenIntrospectionTests: XCTestCase {
     
     func testThatScopeReturnedInReponseIfTokenHasScope() throws {
         let tokenString = "VALID_TOKEN"
-        let validToken = AccessToken(tokenString: tokenString, clientID: "some-client", userID: nil, scopes: ["email", "profile"], expiryTime: Date().addingTimeInterval(60))
+        let validToken = AccessToken(tokenString: tokenString, clientID: clientID, userID: nil, scopes: ["email", "profile"], expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[tokenString] = validToken
         
         let response = try getInfoResponse(token: tokenString)
@@ -159,6 +163,19 @@ class TokenIntrospectionTests: XCTestCase {
         XCTAssertEqual(response.status, .ok)
         XCTAssertEqual(responseJSON["active"]?.bool, true)
         XCTAssertEqual(responseJSON["scope"]?.string, "email profile")
+    }
+    
+    func testCliendIDReturnedInTokenResponse() throws {
+        let response = try getInfoResponse()
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, true)
+        XCTAssertEqual(responseJSON["client_id"]?.string, clientID)
     }
     
     // MARK: - Helper method

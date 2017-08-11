@@ -25,6 +25,7 @@ struct OAuthResponseParameters {
     static let refreshToken = "refresh_token"
     static let scope = "scope"
     static let active = "active"
+    static let clientID = "client_id"
 
     struct ErrorType {
         static let invalidRequest = "invalid_request"

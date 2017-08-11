@@ -16,6 +16,7 @@ class TokenIntrospectionTests: XCTestCase {
         ("testThatInvalidTokenReturnsInactive", testThatInvalidTokenReturnsInactive),
         ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
         ("testThatValidTokenReturnsActive", testThatValidTokenReturnsActive),
+        ("testThatScopeReturnedInReponseIfTokenHasScope", testThatScopeReturnedInReponseIfTokenHasScope),
         ]
     
     // MARK: - Properties
@@ -141,6 +142,23 @@ class TokenIntrospectionTests: XCTestCase {
         
         XCTAssertEqual(response.status, .ok)
         XCTAssertEqual(responseJSON["active"]?.bool, true)
+    }
+    
+    func testThatScopeReturnedInReponseIfTokenHasScope() throws {
+        let tokenString = "VALID_TOKEN"
+        let validToken = AccessToken(tokenString: tokenString, clientID: "some-client", userID: nil, scopes: ["email", "profile"], expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[tokenString] = validToken
+        
+        let response = try getInfoResponse(token: tokenString)
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, true)
+        XCTAssertEqual(responseJSON["scope"]?.string, "email profile")
     }
     
     // MARK: - Helper method

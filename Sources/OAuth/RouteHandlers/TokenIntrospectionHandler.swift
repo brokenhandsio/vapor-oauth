@@ -23,12 +23,19 @@ struct TokenIntrospectionHandler {
             return try createTokenResponse(active: false)
         }
 
-        return try createTokenResponse(active: true)
+        let scopes = token.scopes?.joined(separator: " ")
+
+        return try createTokenResponse(active: true, scopes: scopes)
     }
 
-    func createTokenResponse(active: Bool) throws -> Response {
+    func createTokenResponse(active: Bool, scopes: String? = nil) throws -> Response {
         var json = JSON()
-        try json.set("active", active)
+        try json.set(OAuthResponseParameters.active, active)
+
+        if let scopes = scopes {
+            try json.set(OAuthResponseParameters.scope, scopes)
+        }
+
         let response = Response(status: .ok)
         response.json = json
         return response

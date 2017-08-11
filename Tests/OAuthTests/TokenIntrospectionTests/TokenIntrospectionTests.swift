@@ -1,5 +1,5 @@
 import XCTest
-import OAuth
+@testable import OAuth
 import Vapor
 import Foundation
 
@@ -11,6 +11,9 @@ class TokenIntrospectionTests: XCTestCase {
         ("testCorrectErrorWhenTokenParameterNotSuppliedInRequest", testCorrectErrorWhenTokenParameterNotSuppliedInRequest),
         ("testCorrectErrorWhenNoAuthorisationSuppliied", testCorrectErrorWhenNoAuthorisationSuppliied),
         ("testCorrectErrorWhenInvalidAuthorisationSupplied", testCorrectErrorWhenInvalidAuthorisationSupplied),
+        ("testCorrectErrorWhenInvalidUsernnameSuppliedForAuthorisation", testCorrectErrorWhenInvalidUsernnameSuppliedForAuthorisation),
+        ("testCorrectErrorWhenInvalidPasswordSuppliedForAuthorisation", testCorrectErrorWhenInvalidPasswordSuppliedForAuthorisation),
+        ("testValidResponseWhenUsingBCrypt", testValidResponseWhenUsingBCrypt),
         ("testThatInvalidTokenReturnsInactive", testThatInvalidTokenReturnsInactive),
         ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
         ]
@@ -32,14 +35,15 @@ class TokenIntrospectionTests: XCTestCase {
     let scope1 = "email"
     let scope2 = "create"
     let resourceServerName = "brokenhands-users"
+    let resourceServerPassword = "users"
     
     // MARK: - Overrides
     
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
 
-        let hashedPassword = try! BCryptHasher(cost: 10).make("users")
-        let resourceServer = OAuthResourceServer(username: resourceServerName, password: hashedPassword)
+        OAuthResourceServer.passwordHasher = FakePasswordHasher()
+        let resourceServer = OAuthResourceServer(username: resourceServerName, password: resourceServerPassword.makeBytes())
         fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
 //        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
 //        fakeUserManager.users.append(testUser)
@@ -80,6 +84,35 @@ class TokenIntrospectionTests: XCTestCase {
     func testCorrectErrorWhenInvalidAuthorisationSupplied() throws {
         let response = try getInfoResponse(authHeader: "INVALID")
         
+        XCTAssertEqual(response.status, .unauthorized)
+    }
+    
+    func testCorrectErrorWhenInvalidUsernnameSuppliedForAuthorisation() throws {
+        let header = "UNKOWNUSER:\(resourceServerPassword)".makeBytes().base64Encoded.makeString()
+        let response = try getInfoResponse(authHeader: header)
+        
+        XCTAssertEqual(response.status, .unauthorized)
+    }
+    
+    func testCorrectErrorWhenInvalidPasswordSuppliedForAuthorisation() throws {
+        let header = "\(resourceServerName):SOMEPASSWORD".makeBytes().base64Encoded.makeString()
+        let response = try getInfoResponse(authHeader: header)
+        
+        XCTAssertEqual(response.status, .unauthorized)
+    }
+    
+    func testValidResponseWhenUsingBCrypt() throws {
+        let newServerName = "brokenhands-posts"
+        let newPassword = "posts"
+        
+        let header = "\(newServerName):\(newPassword)".makeBytes().base64Encoded.makeString()
+        
+        OAuthResourceServer.passwordHasher = BCryptHasher(cost: 10)
+        let hashedPassword = try OAuthResourceServer.passwordHasher.make(newPassword)
+        let resourceServer = OAuthResourceServer(username: newServerName, password: hashedPassword)
+        fakeResourceServerRetriever.resourceServers[newServerName] = resourceServer
+        
+        let response = try getInfoResponse(authHeader: header)
         XCTAssertEqual(response.status, .unauthorized)
     }
     

@@ -23,12 +23,12 @@ struct TokenIntrospectionHandler {
             return try createTokenResponse(active: false)
         }
 
-        return "OK"
+        return try createTokenResponse(active: true)
     }
 
     func createTokenResponse(active: Bool) throws -> Response {
         var json = JSON()
-        try json.set("active", false)
+        try json.set("active", active)
         let response = Response(status: .ok)
         response.json = json
         return response

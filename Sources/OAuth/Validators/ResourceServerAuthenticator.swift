@@ -10,8 +10,7 @@ struct ResourceServerAuthenticator {
             throw Abort.unauthorized
         }
 
-        guard try OAuthResourceServer.passwordVerifier.verify(password: credentials.password.makeBytes(),
-                                                              matches: resourceServer.password) else {
+        guard resourceServer.password.makeString() == credentials.password else {
             throw Abort.unauthorized
         }
     }

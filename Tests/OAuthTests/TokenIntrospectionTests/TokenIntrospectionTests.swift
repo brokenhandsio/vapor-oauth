@@ -13,9 +13,9 @@ class TokenIntrospectionTests: XCTestCase {
         ("testCorrectErrorWhenInvalidAuthorisationSupplied", testCorrectErrorWhenInvalidAuthorisationSupplied),
         ("testCorrectErrorWhenInvalidUsernnameSuppliedForAuthorisation", testCorrectErrorWhenInvalidUsernnameSuppliedForAuthorisation),
         ("testCorrectErrorWhenInvalidPasswordSuppliedForAuthorisation", testCorrectErrorWhenInvalidPasswordSuppliedForAuthorisation),
-        ("testValidResponseWhenUsingBCrypt", testValidResponseWhenUsingBCrypt),
         ("testThatInvalidTokenReturnsInactive", testThatInvalidTokenReturnsInactive),
         ("testThatExpiredTokenReturnsInactive", testThatExpiredTokenReturnsInactive),
+        ("testThatValidTokenReturnsActive", testThatValidTokenReturnsActive),
         ]
     
     // MARK: - Properties
@@ -42,7 +42,6 @@ class TokenIntrospectionTests: XCTestCase {
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, validScopes: [scope1, scope2], resourceServerRetriever: fakeResourceServerRetriever)
 
-        OAuthResourceServer.passwordHasher = FakePasswordHasher()
         let resourceServer = OAuthResourceServer(username: resourceServerName, password: resourceServerPassword.makeBytes())
         fakeResourceServerRetriever.resourceServers[resourceServerName] = resourceServer
 //        let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
@@ -101,21 +100,6 @@ class TokenIntrospectionTests: XCTestCase {
         XCTAssertEqual(response.status, .unauthorized)
     }
     
-    func testValidResponseWhenUsingBCrypt() throws {
-        let newServerName = "brokenhands-posts"
-        let newPassword = "posts"
-        
-        let header = "\(newServerName):\(newPassword)".makeBytes().base64Encoded.makeString()
-        
-        OAuthResourceServer.passwordHasher = BCryptHasher(cost: 10)
-        let hashedPassword = try OAuthResourceServer.passwordHasher.make(newPassword)
-        let resourceServer = OAuthResourceServer(username: newServerName, password: hashedPassword)
-        fakeResourceServerRetriever.resourceServers[newServerName] = resourceServer
-        
-        let response = try getInfoResponse(authHeader: header)
-        XCTAssertEqual(response.status, .unauthorized)
-    }
-    
     func testThatInvalidTokenReturnsInactive() throws {
         let response = try getInfoResponse(token: "UNKNOWN_TOKEN")
         
@@ -141,6 +125,22 @@ class TokenIntrospectionTests: XCTestCase {
         
         XCTAssertEqual(response.status, .ok)
         XCTAssertEqual(responseJSON["active"]?.bool, false)
+    }
+    
+    func testThatValidTokenReturnsActive() throws {
+        let tokenString = "VALID_TOKEN"
+        let validToken = AccessToken(tokenString: tokenString, clientID: "some-client", userID: nil, expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[tokenString] = validToken
+        
+        let response = try getInfoResponse(token: tokenString)
+        
+        guard let responseJSON = response.json else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertEqual(responseJSON["active"]?.bool, true)
     }
     
     // MARK: - Helper method

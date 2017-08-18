@@ -1,6 +1,6 @@
 import XCTest
 import OAuth
-import Vapor
+@testable import Vapor
 import Sessions
 import Cookies
 
@@ -19,6 +19,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         ("testAccessingProtectedRouteWithOneInvalidScopeOneValidReturns401", testAccessingProtectedRouteWithOneInvalidScopeOneValidReturns401),
         ("testAccessingProtectedRouteWithLowercaseHeaderWorks", testAccessingProtectedRouteWithLowercaseHeaderWorks),
         ("testThatAccessingProtectedRouteWithExpiredTokenReturns401", testThatAccessingProtectedRouteWithExpiredTokenReturns401),
+        ("testTokenIntrospectionEndpoint", testTokenIntrospectionEndpoint),
         ]
     
     // MARK: - Properties
@@ -267,6 +268,30 @@ class AuthCodeResourceServerTests: XCTestCase {
         XCTAssertEqual(protectedResponse.status, .unauthorized)
     }
     
+    func testTokenIntrospectionEndpoint() throws {
+        var resourceConfig = Config([:])
+        resourceConfig.environment = .test
+        try resourceConfig.set("servers.default.port", "8081")
+        let resourceDrop = try Droplet(resourceConfig)
+        let remoteResourceController = RemoteResourceController(drop: resourceDrop)
+        remoteResourceController.addRoutes()
+        
+        var authConfig = try Config(arguments: ["vapor", "--env=test --port=8082"])
+        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true)
+        let fakeCodeManager = FakeCodeManager()
+        let clientRetriever = StaticClientRetriever(clients: [newClient])
+        let fakeUserManager = FakeUserManager()
+        let oauthProvider = OAuth.Provider(codeManager: fakeCodeManager, tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2])
+        try authConfig.addProvider(oauthProvider)
+        authConfig.addConfigurable(middleware: SessionsMiddleware.init, name: "sessions")
+        try authConfig.set("droplet.middleware", ["error", "sessions"])
+        let authDrop = try Droplet(authConfig)
+        background {
+            _ = try! authDrop.run()
+        }
+        authDrop.console.wait(seconds: 0.5)
+    }
+    
 }
 
 struct TestResourceController {
@@ -293,5 +318,40 @@ struct TestResourceController {
         try json.set("username", user.username)
         
         return json
+    }
+}
+
+struct RemoteResourceController {
+    let drop: Droplet
+    
+    func addRoutes() {
+        
+        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://localhost:8082")
+        let protected = drop.grouped(oauthMiddleware)
+        
+        protected.get("protected", handler: protectedHandler)
+        protected.get("user", handler: getOAuthUser)
+    }
+    
+    func protectedHandler(request: Request) throws -> ResponseRepresentable {
+        return "PROTECTED"
+    }
+    
+    func getOAuthUser(request: Request) throws -> ResponseRepresentable {
+        let user: OAuthUser = try request.oauth.user()
+        var json = JSON()
+        try json.set("userID", user.id)
+        try json.set("email", user.emailAddress)
+        try json.set("username", user.username)
+        
+        return json
+    }
+}
+
+struct OAuth2Middleware: Middleware {
+    let tokenIntrospectionEndpoint: String
+    
+    func respond(to request: Request, chainingTo next: Responder) throws -> Response {
+        return try next.respond(to: request)
     }
 }

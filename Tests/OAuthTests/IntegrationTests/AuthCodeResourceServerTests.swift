@@ -278,10 +278,10 @@ class AuthCodeResourceServerTests: XCTestCase {
         
         var authConfig = try Config(arguments: ["vapor", "--env=test"])
         let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true)
-        let fakeCodeManager = FakeCodeManager()
         let clientRetriever = StaticClientRetriever(clients: [newClient])
         let fakeUserManager = FakeUserManager()
-        let oauthProvider = OAuth.Provider(codeManager: fakeCodeManager, tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2])
+        let resourceServerRetriever = FakeResourceServerRetriever()
+        let oauthProvider = OAuth.Provider(tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2], resourceServerRetriever: resourceServerRetriever)
         try authConfig.addProvider(oauthProvider)
         authConfig.addConfigurable(middleware: SessionsMiddleware.init, name: "sessions")
         try authConfig.set("droplet.middleware", ["error", "sessions"])
@@ -291,6 +291,8 @@ class AuthCodeResourceServerTests: XCTestCase {
         }
         authDrop.console.wait(seconds: 0.5)
         
+        let resourceServer = OAuthResourceServer(username: "testResource", password: "server".makeBytes())
+        resourceServerRetriever.resourceServers["testResource"] = resourceServer
         
         let forbiddenRequest = Request(method: .get, uri: "/protected/")
         let forbiddenResponse = try resourceDrop.respond(to: forbiddenRequest)
@@ -305,6 +307,9 @@ class AuthCodeResourceServerTests: XCTestCase {
         
         
         let fakeTokenString = "123456789ABCDEFHGUIO"
+        let accessToken = AccessToken(tokenString: fakeTokenString, clientID: newClientID, userID: userID, expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[fakeTokenString] = accessToken
+        
         let protectedRequest = Request(method: .get, uri: "/protected/")
         protectedRequest.headers[.authorization] = "Bearer \(fakeTokenString)"
         let protectedResponse = try resourceDrop.respond(to: protectedRequest)
@@ -404,6 +409,10 @@ struct OAuth2Middleware: Middleware {
         let tokenRequest = Request(method: .post, uri: tokenIntrospectionEndpoint)
         var tokenRequestJSON = JSON()
         try tokenRequestJSON.set("token", token)
+        tokenRequest.json = tokenRequestJSON
+        
+        let resourceAuthHeader = "testResource:server".makeBytes().base64Encoded.makeString()
+        tokenRequest.headers[.authorization] = "Basic \(resourceAuthHeader)"
         
         let tokenInfoResponse = try client.respond(to: tokenRequest)
         

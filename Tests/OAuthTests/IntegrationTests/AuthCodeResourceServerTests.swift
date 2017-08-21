@@ -290,6 +290,38 @@ class AuthCodeResourceServerTests: XCTestCase {
             _ = try! authDrop.run()
         }
         authDrop.console.wait(seconds: 0.5)
+        
+        
+        let forbiddenRequest = Request(method: .get, uri: "/protected/")
+        let forbiddenResponse = try resourceDrop.respond(to: forbiddenRequest)
+        
+        XCTAssertEqual(forbiddenResponse.status, .forbidden)
+        
+        let unauthorizedRequest = Request(method: .get, uri: "/protected/")
+        unauthorizedRequest.headers[.authorization] = "Bearer jfeiowjfeowi"
+        let unauthorizedResponse = try resourceDrop.respond(to: unauthorizedRequest)
+        
+        XCTAssertEqual(unauthorizedResponse.status, .unauthorized)
+        
+        
+        let fakeTokenString = "123456789ABCDEFHGUIO"
+        let protectedRequest = Request(method: .get, uri: "/protected/")
+        protectedRequest.headers[.authorization] = "Bearer \(fakeTokenString)"
+        let protectedResponse = try resourceDrop.respond(to: protectedRequest)
+        
+        XCTAssertEqual(protectedResponse.status, .ok)
+        
+        let userRequest = Request(method: .get, uri: "/user")
+        userRequest.headers[.authorization] = "Bearer \(fakeTokenString)"
+        
+        let userResponse = try drop.respond(to: userRequest)
+        
+        XCTAssertEqual(userResponse.status, .ok)
+        
+        XCTAssertEqual(userResponse.json?["userID"]?.string, userID.string)
+        XCTAssertEqual(userResponse.json?["username"]?.string, username)
+        XCTAssertEqual(userResponse.json?["email"]?.string, email)
+
     }
     
 }
@@ -326,7 +358,7 @@ struct RemoteResourceController {
     
     func addRoutes() {
         
-        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://localhost:8082")
+        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://localhost:8082", requiredScopes: nil, client: drop.client)
         let protected = drop.grouped(oauthMiddleware)
         
         protected.get("protected", handler: protectedHandler)
@@ -350,8 +382,25 @@ struct RemoteResourceController {
 
 struct OAuth2Middleware: Middleware {
     let tokenIntrospectionEndpoint: String
+    let requiredScopes: [String]?
+    let client: ClientFactoryProtocol
     
     func respond(to request: Request, chainingTo next: Responder) throws -> Response {
+        
+        guard let authHeader = request.headers[.authorization] else {
+            throw Abort(.forbidden)
+        }
+        
+        guard authHeader.lowercased().hasPrefix("bearer ") else {
+            throw Abort(.forbidden)
+        }
+        
+        let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
+        
+        guard !token.isEmpty else {
+            throw Abort(.forbidden)
+        }
+        
         return try next.respond(to: request)
     }
 }

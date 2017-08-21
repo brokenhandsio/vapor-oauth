@@ -276,7 +276,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let remoteResourceController = RemoteResourceController(drop: resourceDrop)
         remoteResourceController.addRoutes()
         
-        var authConfig = try Config(arguments: ["vapor", "--env=test --port=8082"])
+        var authConfig = try Config(arguments: ["vapor", "--env=test"])
         let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true)
         let fakeCodeManager = FakeCodeManager()
         let clientRetriever = StaticClientRetriever(clients: [newClient])
@@ -314,7 +314,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let userRequest = Request(method: .get, uri: "/user")
         userRequest.headers[.authorization] = "Bearer \(fakeTokenString)"
         
-        let userResponse = try drop.respond(to: userRequest)
+        let userResponse = try resourceDrop.respond(to: userRequest)
         
         XCTAssertEqual(userResponse.status, .ok)
         
@@ -358,7 +358,7 @@ struct RemoteResourceController {
     
     func addRoutes() {
         
-        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://localhost:8082", requiredScopes: nil, client: drop.client)
+        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info", requiredScopes: nil, client: drop.client)
         let protected = drop.grouped(oauthMiddleware)
         
         protected.get("protected", handler: protectedHandler)
@@ -399,6 +399,20 @@ struct OAuth2Middleware: Middleware {
         
         guard !token.isEmpty else {
             throw Abort(.forbidden)
+        }
+        
+        let tokenRequest = Request(method: .post, uri: tokenIntrospectionEndpoint)
+        var tokenRequestJSON = JSON()
+        try tokenRequestJSON.set("token", token)
+        
+        let tokenInfoResponse = try client.respond(to: tokenRequest)
+        
+        guard let tokenInfoJSON = tokenInfoResponse.json else {
+            throw Abort.serverError
+        }
+        
+        guard let tokenActive = tokenInfoJSON["active"]?.bool, tokenActive else {
+            throw Abort.unauthorized
         }
         
         return try next.respond(to: request)

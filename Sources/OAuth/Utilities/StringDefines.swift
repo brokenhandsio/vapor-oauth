@@ -26,7 +26,9 @@ struct OAuthResponseParameters {
     static let scope = "scope"
     static let active = "active"
     static let clientID = "client_id"
+    static let userID = "user_id"
     static let username = "username"
+    static let email = "email_address"
     static let expiry = "exp"
 
     struct ErrorType {

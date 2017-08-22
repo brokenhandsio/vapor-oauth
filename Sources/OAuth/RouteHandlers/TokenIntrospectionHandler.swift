@@ -25,20 +25,20 @@ struct TokenIntrospectionHandler {
         }
 
         let scopes = token.scopes?.joined(separator: " ")
-        var username: String? = nil
+        var user: OAuthUser? = nil
 
         if let userID = token.userID {
-            if let user = userManager.getUser(userID: userID) {
-                username = user.username
+            if let tokenUser = userManager.getUser(userID: userID) {
+                user = tokenUser
             }
         }
 
         return try createTokenResponse(active: true, expiryDate: token.expiryTime, clientID: token.clientID,
-                                       scopes: scopes, username: username)
+                                       scopes: scopes, user: user)
     }
 
     func createTokenResponse(active: Bool, expiryDate: Date?, clientID: String?, scopes: String? = nil,
-                             username: String? = nil) throws -> Response {
+                             user: OAuthUser? = nil) throws -> Response {
         var json = JSON()
         try json.set(OAuthResponseParameters.active, active)
 
@@ -50,8 +50,12 @@ struct TokenIntrospectionHandler {
             try json.set(OAuthResponseParameters.scope, scopes)
         }
 
-        if let username = username {
-            try json.set(OAuthResponseParameters.username, username)
+        if let user = user {
+            try json.set(OAuthResponseParameters.userID, user.id)
+            try json.set(OAuthResponseParameters.username, user.username)
+            if let email = user.emailAddress {
+                try json.set(OAuthResponseParameters.email, email)
+            }
         }
 
         if let expiryDate = expiryDate {

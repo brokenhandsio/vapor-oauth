@@ -307,8 +307,10 @@ class AuthCodeResourceServerTests: XCTestCase {
         
         
         let fakeTokenString = "123456789ABCDEFHGUIO"
-        let accessToken = AccessToken(tokenString: fakeTokenString, clientID: newClientID, userID: userID, expiryTime: Date().addingTimeInterval(60))
+        let accessToken = AccessToken(tokenString: fakeTokenString, clientID: newClientID, userID: userID, scopes: ["email", "user"], expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[fakeTokenString] = accessToken
+        let fakeUser = OAuthUser(userID: userID, username: username, emailAddress: email, password: "leia".makeBytes())
+        fakeUserManager.users.append(fakeUser)
         
         let protectedRequest = Request(method: .get, uri: "/protected/")
         protectedRequest.headers[.authorization] = "Bearer \(fakeTokenString)"
@@ -363,7 +365,7 @@ struct RemoteResourceController {
     
     func addRoutes() {
         
-        let oauthMiddleware = OAuth2Middleware(tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info", requiredScopes: nil, client: drop.client)
+        let oauthMiddleware = OAuth2TokenIntrospectionMiddleware(tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info", requiredScopes: ["user", "email"], client: drop.client)
         let protected = drop.grouped(oauthMiddleware)
         
         protected.get("protected", handler: protectedHandler)
@@ -382,48 +384,5 @@ struct RemoteResourceController {
         try json.set("username", user.username)
         
         return json
-    }
-}
-
-struct OAuth2Middleware: Middleware {
-    let tokenIntrospectionEndpoint: String
-    let requiredScopes: [String]?
-    let client: ClientFactoryProtocol
-    
-    func respond(to request: Request, chainingTo next: Responder) throws -> Response {
-        
-        guard let authHeader = request.headers[.authorization] else {
-            throw Abort(.forbidden)
-        }
-        
-        guard authHeader.lowercased().hasPrefix("bearer ") else {
-            throw Abort(.forbidden)
-        }
-        
-        let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
-        
-        guard !token.isEmpty else {
-            throw Abort(.forbidden)
-        }
-        
-        let tokenRequest = Request(method: .post, uri: tokenIntrospectionEndpoint)
-        var tokenRequestJSON = JSON()
-        try tokenRequestJSON.set("token", token)
-        tokenRequest.json = tokenRequestJSON
-        
-        let resourceAuthHeader = "testResource:server".makeBytes().base64Encoded.makeString()
-        tokenRequest.headers[.authorization] = "Basic \(resourceAuthHeader)"
-        
-        let tokenInfoResponse = try client.respond(to: tokenRequest)
-        
-        guard let tokenInfoJSON = tokenInfoResponse.json else {
-            throw Abort.serverError
-        }
-        
-        guard let tokenActive = tokenInfoJSON["active"]?.bool, tokenActive else {
-            throw Abort.unauthorized
-        }
-        
-        return try next.respond(to: request)
     }
 }

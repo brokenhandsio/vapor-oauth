@@ -365,7 +365,7 @@ struct RemoteResourceController {
     
     func addRoutes() {
         
-        let oauthMiddleware = OAuth2TokenIntrospectionMiddleware(tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info", requiredScopes: ["user", "email"], client: drop.client)
+        let oauthMiddleware = OAuth2TokenIntrospectionMiddleware(tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info", requiredScopes: ["user", "email"], client: drop.client, resourceServerUsername: "testResource", resourceServerPassword: "server")
         let protected = drop.grouped(oauthMiddleware)
         
         protected.get("protected", handler: protectedHandler)

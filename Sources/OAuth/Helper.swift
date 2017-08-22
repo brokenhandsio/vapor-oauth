@@ -5,8 +5,10 @@ let oauthHelperKey = "oauth-helper"
 
 public final class Helper {
 
-    public static func setup(for request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol) {
-        let helper = Helper(request: request, tokenIntrospectionEndpoint: tokenIntrospectionEndpoint, client: client)
+    public static func setup(for request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol,
+                             resourceServerUsername: String, resourceServerPassword: String) {
+        let helper = Helper(request: request, tokenIntrospectionEndpoint: tokenIntrospectionEndpoint, client: client,
+                            resourceServerUsername: resourceServerUsername, resourceServerPassword: resourceServerPassword)
         request.storage[oauthHelperKey] = helper
     }
 
@@ -17,6 +19,8 @@ public final class Helper {
     let userManager: UserManager?
     let tokenIntrospectionEndpoint: String?
     let client: ClientFactoryProtocol?
+    let resourceServerUsername: String?
+    let resourceServerPassword: String?
 
     var remoteTokenResponse: RemoteTokenResponse?
 
@@ -28,9 +32,12 @@ public final class Helper {
         self.userManager = provider?.userManager
         self.tokenIntrospectionEndpoint = nil
         self.client = nil
+        self.resourceServerUsername = nil
+        self.resourceServerPassword = nil
     }
 
-    init(request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol) {
+    init(request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol,
+         resourceServerUsername: String, resourceServerPassword: String) {
         self.request = request
         self.isLocal = false
         self.tokenManager = nil
@@ -38,6 +45,8 @@ public final class Helper {
         self.userManager = nil
         self.tokenIntrospectionEndpoint = tokenIntrospectionEndpoint
         self.client = client
+        self.resourceServerUsername = resourceServerUsername
+        self.resourceServerPassword = resourceServerPassword
     }
 
     public func assertScopes(_ scopes: [String]?) throws {
@@ -155,7 +164,9 @@ public final class Helper {
     }
 
     private func setupRemoteTokenResponse() throws {
-        guard let request = request, let tokenIntrospectionEndpoint = tokenIntrospectionEndpoint, let client = client else {
+        guard let request = request, let tokenIntrospectionEndpoint = tokenIntrospectionEndpoint,
+            let client = client, let resourceServerUsername = resourceServerUsername,
+            let resourceServerPassword = resourceServerPassword else {
             throw Abort.serverError
         }
 
@@ -178,7 +189,7 @@ public final class Helper {
         try tokenRequestJSON.set("token", token)
         tokenRequest.json = tokenRequestJSON
 
-        let resourceAuthHeader = "testResource:server".makeBytes().base64Encoded.makeString()
+        let resourceAuthHeader = "\(resourceServerUsername):\(resourceServerPassword)".makeBytes().base64Encoded.makeString()
         tokenRequest.headers[.authorization] = "Basic \(resourceAuthHeader)"
 
         let tokenInfoResponse = try client.respond(to: tokenRequest)

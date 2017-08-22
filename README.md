@@ -42,7 +42,7 @@ import OAuth
 Then add the provider to your `Config`:
 
 ```swift
-try addProvider(OAuth.Provider(codeManager: MyCodeManager(), tokenManager: MyTokenManager(), clientRetriever: MyClientRetriever(), authorizeHandler: MyAuthHandler(), userManager: MyUserManager(), validScopes: ["view_profile", "edit_profile"]))
+try addProvider(OAuth.Provider(codeManager: MyCodeManager(), tokenManager: MyTokenManager(), clientRetriever: MyClientRetriever(), authorizeHandler: MyAuthHandler(), userManager: MyUserManager(), validScopes: ["view_profile", "edit_profile"], resourceServerRetriever: MyResourceServerRetriever()))
 ```
 
 To integrate the library, you need to set up a number of things, which implement the various protocols required:
@@ -53,6 +53,7 @@ To integrate the library, you need to set up a number of things, which implement
 * `AuthorizeHandler` - this is responsible for allowing users to allow/deny authorization requests. See below for more details. If you do not want to support this grant type you can exclude this parameter and use the default implementation
 * `UserManager` - this is responsible for authenticating and getting users for the Password Credentials flow. If you do not want to support this flow, you can exclude this parameter and use the default implementation.
 * `validScopes` - this is an optional array of scopes that you wish to support in your system.
+* `ResourceServerRetriever` - this is only required if using the Token Introspection Endpoint and is what is used to authenticate resource servers trying to access the endpoint
 
 Note that there are a number of default implementations for the different required protocols for Fluent in the [Vapor OAuth Fluent package](https://github.com/brokenhandsio/vapor-oauth-fluent).
 
@@ -69,6 +70,10 @@ try request.oauth.assertScopes(["profile"])
 This will throw a 401 error if the token is not valid or does not contain the `profile` scope. This is so common, that there is a dedicated `OAuth2ScopeMiddleware` for this behaviour. You just need to initialise this with an array of scopes that must be required for that `protect` group. If you initialise it with a `nil` array, then it will just make sure that the token is valid.
 
 You can also get the user with `try request.oauth.user()`.
+
+### Protecting Resource Servers With Remote Auth Server
+
+If you have resource servers that are not the same server as the OAuth server that you wish to protect using the Token Introspection Endpoint, things are slightly different. See the [Token Introspection](#token-introspection) section for more information.
 
 # Grant Types
 
@@ -135,4 +140,41 @@ Client Credentials is a userless flow and is designed for servers accessing othe
 
 ## Token Introspection
 
-**Note:** as per [the spec](https://tools.ietf.org/html/rfc7662#section-4) - the token introspection endpoint MUST be protected by HTTPS - this means the server must be behind a TLS certificate (commonly known as SSL). Vapor OAuth leaves this up to the integrating library to implement. 
+If running a microservices architecture it is useful to have a single server that handles authorization, which all the other resource servers query. To do this, you can use the Token Introspection Endpoint extension. In Vapor OAuth, this adds an endpoint you can post tokens tokens at `/oauth/token_info`.
+
+You can send a POST request to this endpoint with a single parameter, `token`, which contains the OAuth token you want to check. If it is valid and active, then it will return a JSON payload, that looks similar to:
+
+```json
+{
+    "active": true,
+    "client_id": "ABDED0123456",
+    "scope": "email profile",
+    "exp": 1503445858,
+    "user_id": "12345678",
+    "username": "hansolo",
+    "email_address": "hansolo@therebelalliance.com"
+}
+```
+
+If the token has expired or does not exist then it will simply return:
+
+```json
+{
+    "active": false
+}
+```
+
+This endpoint is protected using HTTP Basic Authentication so you need to send an `Authorization: Basic abc` header with the request. This will check the `ResourceServerRetriever` for the username and password sent.
+
+**Note:** as per [the spec](https://tools.ietf.org/html/rfc7662#section-4) - the token introspection endpoint MUST be protected by HTTPS - this means the server must be behind a TLS certificate (commonly known as SSL). Vapor OAuth leaves this up to the integrating library to implement.
+
+### Protecting Endpoints
+
+To protect resources on other servers with OAuth using the Token Introspection endpoint, you either need to use the `OAuth2TokenIntrospectionMiddleware` on your routes that you want to protect, or you need to manually set up the `Helper` object (the middleware does this for you). Both the middleware and helper setup require:
+
+* `tokenIntrospectionEndpoint` - the endpoint where the token can be validated
+* `client` - the `Droplet`'s client to send the token validation request with
+* `resourceServerUsername` - the username of the resource server
+* `resourceServerPassword` - the password of the resource server
+
+Once either of these has been set up, you can then call `request.oauth.user()` or `request.oauth.assertScopes()` like normal.

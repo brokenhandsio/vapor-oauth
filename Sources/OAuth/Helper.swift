@@ -4,12 +4,12 @@ import Vapor
 let oauthHelperKey = "oauth-helper"
 
 public final class Helper {
-    
+
     public static func setup(for request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol) {
         let helper = Helper(request: request, tokenIntrospectionEndpoint: tokenIntrospectionEndpoint, client: client)
         request.storage[oauthHelperKey] = helper
     }
-    
+
     let isLocal: Bool
     weak var request: Request?
     let tokenAuthenticator: TokenAuthenticator?
@@ -17,9 +17,9 @@ public final class Helper {
     let userManager: UserManager?
     let tokenIntrospectionEndpoint: String?
     let client: ClientFactoryProtocol?
-    
+
     var remoteTokenResponse: RemoteTokenResponse?
-    
+
     init(request: Request, provider: OAuth2Provider?) {
         self.isLocal = true
         self.request = request
@@ -29,7 +29,7 @@ public final class Helper {
         self.tokenIntrospectionEndpoint = nil
         self.client = nil
     }
-    
+
     init(request: Request, tokenIntrospectionEndpoint: String, client: ClientFactoryProtocol) {
         self.request = request
         self.isLocal = false
@@ -47,7 +47,7 @@ public final class Helper {
             try assertRemoteScopes(scopes)
         }
     }
-    
+
     private func assertLocalScopes(_ scopes: [String]?) throws {
         guard let tokenAuthenticator = tokenAuthenticator else {
             throw Abort(.forbidden)
@@ -59,21 +59,21 @@ public final class Helper {
             throw Abort.unauthorized
         }
     }
-    
+
     private func assertRemoteScopes(_ scopes: [String]?) throws {
         if remoteTokenResponse == nil {
             try setupRemoteTokenResponse()
         }
-        
+
         guard let remoteTokenResponse = remoteTokenResponse else {
             throw Abort.serverError
         }
-        
+
         if let requiredScopes = scopes {
             guard let tokenScopes = remoteTokenResponse.scopes else {
                 throw Abort.unauthorized
             }
-            
+
             for scope in requiredScopes {
                 if !tokenScopes.contains(scope) {
                     throw Abort.unauthorized
@@ -89,38 +89,38 @@ public final class Helper {
             return try getRemoteUser()
         }
     }
-    
+
     private func getLocalUser() throws -> OAuthUser {
         guard let userManager = userManager else {
             throw Abort(.forbidden)
         }
-        
+
         let token = try getToken()
-        
+
         guard let userID = token.userID else {
             throw Abort.unauthorized
         }
-        
+
         guard let user = userManager.getUser(userID: userID) else {
             throw Abort.unauthorized
         }
-        
+
         return user
     }
-    
+
     private func getRemoteUser() throws -> OAuthUser {
         if remoteTokenResponse == nil {
             try setupRemoteTokenResponse()
         }
-        
+
         guard let remoteTokenResponse = remoteTokenResponse else {
             throw Abort.serverError
         }
-        
+
         guard let user = remoteTokenResponse.user else {
             throw Abort.unauthorized
         }
-        
+
         return user
     }
 
@@ -153,12 +153,12 @@ public final class Helper {
 
         return accessToken
     }
-    
+
     private func setupRemoteTokenResponse() throws {
         guard let request = request, let tokenIntrospectionEndpoint = tokenIntrospectionEndpoint, let client = client else {
             throw Abort.serverError
         }
-        
+
         guard let authHeader = request.headers[.authorization] else {
             throw Abort(.forbidden)
         }
@@ -190,10 +190,10 @@ public final class Helper {
         guard let tokenActive = tokenInfoJSON[OAuthResponseParameters.active]?.bool, tokenActive else {
             throw Abort.unauthorized
         }
-        
+
         var scopes: [String]?
         var oauthUser: OAuthUser?
-        
+
         if let tokenScopes = tokenInfoJSON[OAuthResponseParameters.scope]?.string {
             scopes = tokenScopes.components(separatedBy: " ")
         }
@@ -203,9 +203,11 @@ public final class Helper {
                 throw Abort.serverError
             }
             let userIdentifier: Identifier = Identifier(userID, in: nil)
-            oauthUser = OAuthUser(userID: userIdentifier, username: username, emailAddress: tokenInfoJSON[OAuthResponseParameters.email]?.string, password: "".makeBytes())
+            oauthUser = OAuthUser(userID: userIdentifier, username: username,
+                                  emailAddress: tokenInfoJSON[OAuthResponseParameters.email]?.string,
+                                  password: "".makeBytes())
         }
-        
+
         self.remoteTokenResponse = RemoteTokenResponse(scopes: scopes, user: oauthUser)
 
     }

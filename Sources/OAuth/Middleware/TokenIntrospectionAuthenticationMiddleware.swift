@@ -1,6 +1,6 @@
 import Vapor
 
-struct TokenIntrospectionAuthenticationMiddleware: Middleware {
+struct TokenIntrospectionAuthMiddleware: Middleware {
 
     let resourceServerAuthenticator: ResourceServerAuthenticator
 

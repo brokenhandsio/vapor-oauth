@@ -34,7 +34,7 @@ struct OAuth2Provider {
         router.post("oauth", "authorize", handler: authorizePostHandler.handleRequest)
         router.post("oauth", "token", handler: tokenHandler.handleRequest)
 
-        let tokenIntrospectionAuthMiddleware = TokenIntrospectionAuthenticationMiddleware(resourceServerAuthenticator: resourceServerAuthenticator)
+        let tokenIntrospectionAuthMiddleware = TokenIntrospectionAuthMiddleware(resourceServerAuthenticator: resourceServerAuthenticator)
         let resourceServerProtected = router.grouped(tokenIntrospectionAuthMiddleware)
         resourceServerProtected.post("oauth", "token_info", handler: tokenIntrospectionHandler.handleRequest)
     }

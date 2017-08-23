@@ -76,7 +76,7 @@ struct RefreshTokenHandler {
 
         do {
             try clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
-                                                   grantType: .refresh, checkConfidentialClient: true)
+                                                   grantType: nil, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                                                           description: "Request had invalid client credentials",

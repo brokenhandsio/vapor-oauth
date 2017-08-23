@@ -42,7 +42,7 @@ struct ClientValidator {
         }
     }
 
-    func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType,
+    func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType?,
                             checkConfidentialClient: Bool = false) throws {
         guard let client = clientRetriever.getClient(clientID: clientID) else {
             throw ClientError.unauthorized
@@ -52,16 +52,15 @@ struct ClientValidator {
             throw ClientError.unauthorized
         }
 
-        // Any client can refresh a token
-        if grantType != .refresh {
+        if let grantType = grantType {
             guard client.allowedGrantType == grantType else {
                 throw Abort(.forbidden)
             }
-        }
 
-        if grantType == .password {
-            guard client.firstParty else {
-                throw ClientError.notFirstParty
+            if grantType == .password {
+                guard client.firstParty else {
+                    throw ClientError.notFirstParty
+                }
             }
         }
 

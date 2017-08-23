@@ -59,21 +59,7 @@ class RemoteOAuthHelper: OAuthHelper {
     }
 
     private func setupRemoteTokenResponse() throws {
-        guard let request = request else {
-                throw Abort.serverError
-        }
-
-        guard let authHeader = request.headers[.authorization] else {
-            throw Abort(.forbidden)
-        }
-
-        guard authHeader.lowercased().hasPrefix("bearer ") else {
-            throw Abort(.forbidden)
-        }
-
-        let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
-
-        guard !token.isEmpty else {
+        guard let token = try request?.getOAuthToken() else {
             throw Abort(.forbidden)
         }
 

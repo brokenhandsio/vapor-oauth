@@ -38,17 +38,7 @@ struct LocalOAuthHelper: OAuthHelper {
     }
 
     private func getToken() throws -> AccessToken {
-        guard let authHeader = request?.headers[.authorization], let tokenManager = tokenManager else {
-            throw Abort(.forbidden)
-        }
-
-        guard authHeader.lowercased().hasPrefix("bearer ") else {
-            throw Abort(.forbidden)
-        }
-
-        let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
-
-        guard !token.isEmpty else {
+        guard let tokenManager = tokenManager, let token = try request?.getOAuthToken() else {
             throw Abort(.forbidden)
         }
 

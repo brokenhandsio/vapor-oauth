@@ -49,3 +49,23 @@ extension Request {
 
     static var oauthProvider: OAuth2Provider?
 }
+
+extension Request {
+    func getOAuthToken() throws -> String {
+        guard let authHeader = headers[.authorization] else {
+            throw Abort(.forbidden)
+        }
+
+        guard authHeader.lowercased().hasPrefix("bearer ") else {
+            throw Abort(.forbidden)
+        }
+
+        let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
+
+        guard !token.isEmpty else {
+            throw Abort(.forbidden)
+        }
+
+        return token
+    }
+}

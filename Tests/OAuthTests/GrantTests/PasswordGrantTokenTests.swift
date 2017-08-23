@@ -58,7 +58,7 @@ class PasswordGrantTokenTests: XCTestCase {
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, clientRetriever: fakeClientGetter, userManager: fakeUserManager, validScopes: [scope1, scope2, scope3], log: capturingLogger)
         
-        let testClient = OAuthClient(clientID: testClientID, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2], firstParty: true)
+        let testClient = OAuthClient(clientID: testClientID, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2], firstParty: true, allowedGrantType: .password)
         fakeClientGetter.validClients[testClientID] = testClient
         let testUser = OAuthUser(userID: testUserID, username: testUsername, emailAddress: nil, password: testPassword.makeBytes())
         fakeUserManager.users.append(testUser)
@@ -171,7 +171,7 @@ class PasswordGrantTokenTests: XCTestCase {
     
     func testCorrectErrorWhenClientDoesNotAuthenticate() throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD")
+        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .password)
         fakeClientGetter.validClients[clientID] = clientWithSecret
         
         let response = try getPasswordResponse(clientID: clientID, clientSecret: "incorrectPassword")
@@ -190,7 +190,7 @@ class PasswordGrantTokenTests: XCTestCase {
     
     func testCorrectErrorIfClientSecretNotSentAndIsExpected() throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD")
+        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .password)
         fakeClientGetter.validClients[clientID] = clientWithSecret
         
         let response = try getPasswordResponse(clientID: clientID, clientSecret: nil)
@@ -319,7 +319,7 @@ class PasswordGrantTokenTests: XCTestCase {
 
     func testCorrectErrorWhen3rdParyClientTriesToUsePassword() throws {
         let newClientID = "AB1234"
-        let newClient = OAuthClient(clientID: newClientID, redirectURIs: nil, firstParty: false)
+        let newClient = OAuthClient(clientID: newClientID, redirectURIs: nil, firstParty: false, allowedGrantType: .password)
         fakeClientGetter.validClients[newClientID] = newClient
         
         let response = try getPasswordResponse(clientID: newClientID, clientSecret: nil)
@@ -437,7 +437,7 @@ class PasswordGrantTokenTests: XCTestCase {
     func testClientNotConfiguredWithAccessToPasswordFlowCantAccessIt() throws {
         let unauthorizedID = "not-allowed"
         let unauthorizedSecret = "client-secret"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantTypes: [.authorization, .clientCredentials, .implicit, .refresh])
+        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantType: .clientCredentials)
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
         
         let response = try getPasswordResponse(clientID: unauthorizedID, clientSecret: unauthorizedSecret)
@@ -448,7 +448,7 @@ class PasswordGrantTokenTests: XCTestCase {
     func testClientConfiguredWithAccessToPasswordFlowCanAccessIt() throws {
         let authorizedID = "not-allowed"
         let authorizedSecret = "client-secret"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: nil, clientSecret: authorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantTypes: [.password])
+        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: nil, clientSecret: authorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantType: .password)
         fakeClientGetter.validClients[authorizedID] = authorizedClient
         
         let response = try getPasswordResponse(clientID: authorizedID, clientSecret: authorizedSecret)

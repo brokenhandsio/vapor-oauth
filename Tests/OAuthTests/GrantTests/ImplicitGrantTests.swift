@@ -72,7 +72,7 @@ class ImplicitGrantTests: XCTestCase {
     
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, clientRetriever: fakeClientGetter, authorizeHandler: capturingAuthHandler, validScopes: [scope1, scope2, scope3], sessions: fakeSessions)
-        let testClient = OAuthClient(clientID: testClientID, redirectURIs: [testRedirectURIString], validScopes: [scope1, scope2])
+        let testClient = OAuthClient(clientID: testClientID, redirectURIs: [testRedirectURIString], validScopes: [scope1, scope2], allowedGrantType: .implicit)
         fakeClientGetter.validClients[testClientID] = testClient
         testRedirectURI = URIParser.shared.parse(bytes: testRedirectURIString.makeBytes())
         
@@ -200,7 +200,7 @@ class ImplicitGrantTests: XCTestCase {
     
     func testClientNotConfiguredWithAccessToImplciitFlowCantAccessItForGet() throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.authorization, .password, .clientCredentials, .refresh])
+        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .refresh)
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
         
         let response = try makeImplicitGrantRequest(clientID: unauthorizedID)
@@ -210,7 +210,7 @@ class ImplicitGrantTests: XCTestCase {
     
     func testClientConfiguredWithAccessToImplicitFlowCanAccessItForGet() throws {
         let authorizedID = "not-allowed"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.implicit])
+        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .implicit)
         fakeClientGetter.validClients[authorizedID] = authorizedClient
         
         let response = try makeImplicitGrantRequest(clientID: authorizedID)
@@ -238,7 +238,7 @@ class ImplicitGrantTests: XCTestCase {
     func testThatRedirectURICanBeConfiguredIfUserDoesNotAuthorizeApplication() throws {
         let clientID = "ABCDEFG"
         let redirectURI = "http://new.brokenhands.io/callback"
-        let client = OAuthClient(clientID: clientID, redirectURIs: [redirectURI])
+        let client = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .implicit)
         fakeClientGetter.validClients[clientID] = client
         
         let authorizationDenyResponse = try getImplicitGrantResponse(approve: false, clientID: clientID, redirectURI: redirectURI)
@@ -288,7 +288,7 @@ class ImplicitGrantTests: XCTestCase {
         
         let clientID = "ABCDE1234"
         let redirectURI = "http://api.brokenhands.io/callback"
-        let newClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI])
+        let newClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .implicit)
         fakeClientGetter.validClients[clientID] = newClient
         
         let response = try getImplicitGrantResponse(clientID: clientID, redirectURI: redirectURI)
@@ -456,7 +456,7 @@ class ImplicitGrantTests: XCTestCase {
     
     func testClientNotConfiguredWithAccessToImplciitFlowCantAccessIt() throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.authorization, .password, .clientCredentials, .refresh])
+        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .refresh)
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
         
         let response = try getImplicitGrantResponse(clientID: unauthorizedID)
@@ -466,7 +466,7 @@ class ImplicitGrantTests: XCTestCase {
     
     func testClientConfiguredWithAccessToImplicitFlowCanAccessIt() throws {
         let authorizedID = "not-allowed"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.implicit])
+        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .implicit)
         fakeClientGetter.validClients[authorizedID] = authorizedClient
         
         let response = try getImplicitGrantResponse(clientID: authorizedID)

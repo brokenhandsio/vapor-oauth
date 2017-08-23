@@ -8,19 +8,19 @@ public final class OAuthClient: Extendable {
     public let validScopes: [String]?
     public let confidentialClient: Bool?
     public let firstParty: Bool
-    public let allowedGrantTypes: [OAuthFlowType]?
+    public let allowedGrantType: OAuthFlowType
 
     public var extend: [String: Any] = [:]
 
     public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
-                confidential: Bool? = nil, firstParty: Bool = false, allowedGrantTypes: [OAuthFlowType]? = nil) {
+                confidential: Bool? = nil, firstParty: Bool = false, allowedGrantType: OAuthFlowType) {
         self.clientID = clientID
         self.redirectURIs = redirectURIs
         self.clientSecret = clientSecret
         self.validScopes = validScopes
         self.confidentialClient = confidential
         self.firstParty = firstParty
-        self.allowedGrantTypes = allowedGrantTypes
+        self.allowedGrantType = allowedGrantType
     }
 
     func validateRedirectURI(_ redirectURI: String) -> Bool {

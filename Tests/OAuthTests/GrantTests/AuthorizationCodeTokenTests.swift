@@ -53,7 +53,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(codeManager: fakeCodeManager, tokenManager: fakeTokenManager, clientRetriever: fakeClientGetter)
         
-        let testClient = OAuthClient(clientID: testClientID, redirectURIs: [testClientRedirectURI], clientSecret: testClientSecret)
+        let testClient = OAuthClient(clientID: testClientID, redirectURIs: [testClientRedirectURI], clientSecret: testClientSecret, allowedGrantType: .authorization)
         fakeClientGetter.validClients[testClientID] = testClient
         let testCode = OAuthCode(codeID: testCodeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: userID, expiryDate: Date().addingTimeInterval(60), scopes: scopes)
         fakeCodeManager.codes[testCodeID] = testCode
@@ -164,7 +164,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
     
     func testCorrectErrorAndHeadersReceivedIfClientSecretNotSendAndIsExpected() throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD")
+        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .authorization)
         fakeClientGetter.validClients[clientID] = clientWithSecret
         
         let response = try getAuthCodeResponse(clientID: clientID, clientSecret: nil)
@@ -183,7 +183,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
     
     func testCorrectErrorAndHeadersReceivedIfClientDoesNotAuthenticateCorrectly() throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD")
+        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .authorization)
         fakeClientGetter.validClients[clientID] = clientWithSecret
         
         let response = try getAuthCodeResponse(clientID: clientID, clientSecret: "incorrectPassword")
@@ -221,7 +221,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
         fakeCodeManager.codes[codeID] = code
         
         let clientBID = "clientB"
-        let clientB = OAuthClient(clientID: clientBID, redirectURIs: [testClientRedirectURI])
+        let clientB = OAuthClient(clientID: clientBID, redirectURIs: [testClientRedirectURI], allowedGrantType: .authorization)
         fakeClientGetter.validClients[clientBID] = clientB
         
         let response = try getAuthCodeResponse(code: codeID, redirectURI: testClientRedirectURI, clientID: clientBID, clientSecret: nil)
@@ -335,7 +335,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
     }
     
     func testThatClientSecretNotNeededIfClientNotIssuedWithOne() throws {
-        let clientWithoutSecret = OAuthClient(clientID: testClientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: nil)
+        let clientWithoutSecret = OAuthClient(clientID: testClientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: nil, allowedGrantType: .authorization)
         fakeClientGetter.validClients[testClientID] = clientWithoutSecret
         
         let response = try getAuthCodeResponse(clientID: testClientID, clientSecret: nil)

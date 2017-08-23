@@ -22,11 +22,11 @@ struct ClientValidator {
         }
 
         if responseType == ResponseType.code {
-            guard client.allowedGrantTypes?.contains(.authorization) ?? true else {
+            guard client.allowedGrantType == .authorization else {
                 throw Abort(.forbidden)
             }
         } else {
-            guard client.allowedGrantTypes?.contains(.implicit) ?? true else {
+            guard client.allowedGrantType == .implicit else {
                 throw Abort(.forbidden)
             }
         }
@@ -52,8 +52,11 @@ struct ClientValidator {
             throw ClientError.unauthorized
         }
 
-        guard client.allowedGrantTypes?.contains(grantType) ?? true else {
-            throw Abort(.forbidden)
+        // Any client can refresh a token
+        if grantType != .refresh {
+            guard client.allowedGrantType == grantType else {
+                throw Abort(.forbidden)
+            }
         }
 
         if grantType == .password {

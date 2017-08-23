@@ -30,8 +30,6 @@ class TokenRefreshTests: XCTestCase {
         ("testUserIDIsSetOnAccessTokenIfRefreshTokenHasOne", testUserIDIsSetOnAccessTokenIfRefreshTokenHasOne),
         ("testClientIDSetOnAccessTokenFromRefreshToken", testClientIDSetOnAccessTokenFromRefreshToken),
         ("testExpiryTimeSetOnNewAccessToken", testExpiryTimeSetOnNewAccessToken),
-        ("testClientNotConfiguredWithAccessToRefreshFlowCantAccessIt", testClientNotConfiguredWithAccessToRefreshFlowCantAccessIt),
-        ("testClientConfiguredWithAccessToRefreshFlowCanAccessIt", testClientConfiguredWithAccessToRefreshFlowCanAccessIt),
         ]
     
     // MARK: - Properties
@@ -53,7 +51,7 @@ class TokenRefreshTests: XCTestCase {
     override func setUp() {
         drop = try! TestDataBuilder.getOAuthDroplet(tokenManager: fakeTokenManager, clientRetriever: fakeClientGetter, validScopes: [scope1, scope2, scope3, scope4])
         
-        let testClient = OAuthClient(clientID: testClientID, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2, scope4], confidential: true)
+        let testClient = OAuthClient(clientID: testClientID, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2, scope4], confidential: true, allowedGrantType: .authorization)
         fakeClientGetter.validClients[testClientID] = testClient
         validRefreshToken = RefreshToken(tokenString: refreshTokenString, clientID: testClientID, userID: nil, scopes: [scope1, scope2])
         fakeTokenManager.refreshTokens[refreshTokenString] = validRefreshToken
@@ -180,7 +178,7 @@ class TokenRefreshTests: XCTestCase {
     func testThatNonConfidentialClientsGetErrorWhenRequestingToken() throws {
         let nonConfidentialClientID = "NONCONF"
         let nonConfidentialClientSecret = "SECRET"
-        let nonConfidentialClient = OAuthClient(clientID: nonConfidentialClientID, redirectURIs: nil, clientSecret: nonConfidentialClientSecret, confidential: false)
+        let nonConfidentialClient = OAuthClient(clientID: nonConfidentialClientID, redirectURIs: nil, clientSecret: nonConfidentialClientSecret, confidential: false, allowedGrantType: .authorization)
         fakeClientGetter.validClients[nonConfidentialClientID] = nonConfidentialClient
         
         let response = try getTokenResponse(clientID: nonConfidentialClientID, clientSecret: nonConfidentialClientSecret)
@@ -217,7 +215,7 @@ class TokenRefreshTests: XCTestCase {
     func testThatAttemptingRefreshWithRefreshTokenFromDifferentClientReturnsError() throws {
         let otherClientID = "ABCDEFGHIJKLMON"
         let otherClientSecret = "1234"
-        let otherClient = OAuthClient(clientID: otherClientID, redirectURIs: nil, clientSecret: otherClientSecret, confidential: true)
+        let otherClient = OAuthClient(clientID: otherClientID, redirectURIs: nil, clientSecret: otherClientSecret, confidential: true, allowedGrantType: .authorization)
         fakeClientGetter.validClients[otherClientID] = otherClient
         
         let response = try getTokenResponse(clientID: otherClientID, clientSecret: otherClientSecret)
@@ -424,7 +422,7 @@ class TokenRefreshTests: XCTestCase {
         let clientID = "the-client-id-to-set"
         let refreshToken = RefreshToken(tokenString: refreshTokenString, clientID: clientID, userID: "some-user")
         fakeTokenManager.refreshTokens[refreshTokenString] = refreshToken
-        fakeClientGetter.validClients[clientID] = OAuthClient(clientID: clientID, redirectURIs: nil, clientSecret: testClientSecret, confidential: true)
+        fakeClientGetter.validClients[clientID] = OAuthClient(clientID: clientID, redirectURIs: nil, clientSecret: testClientSecret, confidential: true, allowedGrantType: .authorization)
         
         let response = try getTokenResponse(clientID: clientID, refreshToken: refreshTokenString)
         
@@ -459,32 +457,6 @@ class TokenRefreshTests: XCTestCase {
         }
         
         XCTAssertEqual(accessToken.expiryTime, currentTime.addingTimeInterval(3600))
-    }
-    
-    func testClientNotConfiguredWithAccessToRefreshFlowCantAccessIt() throws {
-        let unauthorizedID = "not-allowed"
-        let unauthorizedSecret = "client-secret"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantTypes: [.authorization, .clientCredentials, .implicit, .password])
-        fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
-        
-        let response = try getTokenResponse(clientID: unauthorizedID, clientSecret: unauthorizedSecret)
-        
-        XCTAssertEqual(response.status, .forbidden)
-    }
-    
-    func testClientConfiguredWithAccessToRefreshFlowCanAccessIt() throws {
-        let authorizedID = "not-allowed"
-        let authorizedSecret = "client-secret"
-        let newRefreshTokenString = "some-new-token"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: nil, clientSecret: authorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantTypes: [.refresh])
-        fakeClientGetter.validClients[authorizedID] = authorizedClient
-        
-        let newRefreshToken = RefreshToken(tokenString: newRefreshTokenString, clientID: authorizedID, userID: nil, scopes: [scope1, scope2])
-        fakeTokenManager.refreshTokens[newRefreshTokenString] = newRefreshToken
-        
-        let response = try getTokenResponse(clientID: authorizedID, clientSecret: authorizedSecret, refreshToken: newRefreshTokenString)
-        
-        XCTAssertEqual(response.status, .ok)
     }
     
     // MARK: - Private

@@ -45,7 +45,7 @@ class AuthorizationRequestTests: XCTestCase {
     // MARK: - Overrides
     
     override func setUp() {
-        let oauthClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI])
+        let oauthClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = oauthClient
         drop = try! TestDataBuilder.getOAuthDroplet(clientRetriever: fakeClientRetriever, authorizeHandler: capturingAuthoriseHandler)
     }
@@ -74,11 +74,14 @@ class AuthorizationRequestTests: XCTestCase {
     
     func testThatAuthorizationTokenRequestRedirectsToAuthoriseApplicationPage() throws {
         let responseType = "token"
+        let implicitClientID = "implicit"
+        let implicitClient = OAuthClient(clientID: implicitClientID, redirectURIs: [redirectURI], allowedGrantType: .implicit)
+        fakeClientRetriever.validClients[implicitClientID] = implicitClient
         
-        _ = try respondToOAuthRequest(responseType: responseType, clientID: clientID, redirectURI: redirectURI)
+        _ = try respondToOAuthRequest(responseType: responseType, clientID: implicitClientID, redirectURI: redirectURI)
         
         XCTAssertEqual(capturingAuthoriseHandler.responseType, responseType)
-        XCTAssertEqual(capturingAuthoriseHandler.clientID, clientID)
+        XCTAssertEqual(capturingAuthoriseHandler.clientID, implicitClientID)
         XCTAssertEqual(capturingAuthoriseHandler.redirectURI, URIParser.shared.parse(bytes: redirectURI.makeBytes()))
     }
     
@@ -92,7 +95,7 @@ class AuthorizationRequestTests: XCTestCase {
     func testThatBadRequestRedirectsBackToClientRedirectURI() throws {
         let differentURI = "https://api.test.com/cb"
         let clientID = "123ABC"
-        let client = OAuthClient(clientID: clientID, redirectURIs: [differentURI])
+        let client = OAuthClient(clientID: clientID, redirectURIs: [differentURI], allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = client
         
         let response = try respondToOAuthRequest(responseType: nil, clientID: clientID, redirectURI: differentURI)
@@ -210,7 +213,7 @@ class AuthorizationRequestTests: XCTestCase {
         let clientID = "ABCDEFGH"
         let scopes = ["email", "profile", "admin"]
         let invalidScope = "create"
-        let scopeClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], validScopes: scopes)
+        let scopeClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], validScopes: scopes, allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = scopeClient
         
         let response = try respondToOAuthRequest(clientID: clientID, redirectURI: redirectURI, scope: invalidScope)
@@ -222,7 +225,7 @@ class AuthorizationRequestTests: XCTestCase {
     func testConfidentialClientMakingTokenRequestResultsInUnauthorizedClientError() throws {
         let clientID = "ABCDEFGH"
         let responseType = "token"
-        let confidentialClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], confidential: true)
+        let confidentialClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], confidential: true, allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = confidentialClient
         
         let response = try respondToOAuthRequest(responseType: responseType, clientID: clientID, redirectURI: redirectURI)
@@ -235,7 +238,7 @@ class AuthorizationRequestTests: XCTestCase {
         drop = try TestDataBuilder.getOAuthDroplet(clientRetriever: fakeClientRetriever, authorizeHandler: capturingAuthoriseHandler, environment: .production)
         
         let nonHTTPSRedirectURI = "http://api.brokenhands.io/callback/"
-        let httpClient = OAuthClient(clientID: clientID, redirectURIs: [nonHTTPSRedirectURI])
+        let httpClient = OAuthClient(clientID: clientID, redirectURIs: [nonHTTPSRedirectURI], allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = httpClient
         
         _ = try respondToOAuthRequest(clientID: clientID, redirectURI: nonHTTPSRedirectURI)
@@ -261,7 +264,7 @@ class AuthorizationRequestTests: XCTestCase {
     
     func testClientNotConfiguredWithAccessToAuthCodeFlowCantAccessItForGet() throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [redirectURI], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.implicit, .password, .clientCredentials, .refresh])
+        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [redirectURI], clientSecret: nil, validScopes: nil,allowedGrantType: .implicit)
         fakeClientRetriever.validClients[unauthorizedID] = unauthorizedClient
         
         let response = try respondToOAuthRequest(clientID: unauthorizedID, redirectURI: redirectURI)
@@ -271,7 +274,7 @@ class AuthorizationRequestTests: XCTestCase {
     
     func testClientConfiguredWithAccessToAuthCodeFlowCanAccessItForGet() throws {
         let authorizedID = "not-allowed"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [redirectURI], clientSecret: nil, validScopes: nil, allowedGrantTypes: [.authorization])
+        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [redirectURI], clientSecret: nil, validScopes: nil, allowedGrantType: .authorization)
         fakeClientRetriever.validClients[authorizedID] = authorizedClient
         
         let response = try respondToOAuthRequest(clientID: authorizedID, redirectURI: redirectURI)

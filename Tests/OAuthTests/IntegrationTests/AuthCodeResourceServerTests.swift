@@ -41,7 +41,7 @@ class AuthCodeResourceServerTests: XCTestCase {
     
     override func setUp() {
         var config = Config([:])
-        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true)
+        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true, allowedGrantType: .authorization)
         let fakeCodeManager = FakeCodeManager()
         let clientRetriever = StaticClientRetriever(clients: [newClient])
         let fakeUserManager = FakeUserManager()
@@ -277,7 +277,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         remoteResourceController.addRoutes()
         
         var authConfig = try Config(arguments: ["vapor", "--env=test"])
-        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true)
+        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true, allowedGrantType: .authorization)
         let clientRetriever = StaticClientRetriever(clients: [newClient])
         let fakeUserManager = FakeUserManager()
         let resourceServerRetriever = FakeResourceServerRetriever()

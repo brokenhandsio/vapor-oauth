@@ -1,9 +1,20 @@
-# Vapor OAuth
-
-[![Language](https://img.shields.io/badge/Swift-3.1-brightgreen.svg)](http://swift.org)
-[![Build Status](https://travis-ci.org/brokenhandsio/vapor-oauth.svg?branch=master)](https://travis-ci.org/brokenhandsio/vapor-oauth)
-[![codecov](https://codecov.io/gh/brokenhandsio/vapor-oauth/branch/master/graph/badge.svg)](https://codecov.io/gh/brokenhandsio/vapor-oauth)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/brokenhandsio/vapor-oauth/master/LICENSE)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/9938337/29741272-2c09fb0e-8a61-11e7-8697-0ce963bc4b5a.png" alt=“Vapor OAuth“>
+    <br>
+    <br>
+    <a href="https://swift.org">
+        <img src="http://img.shields.io/badge/Swift-3.1-brightgreen.svg" alt="Language">
+    </a>
+    <a href="https://travis-ci.org/brokenhandsio/vapor-oauth">
+        <img src="https://travis-ci.org/brokenhandsio/vapor-oauth.svg?branch=master" alt="Build Status">
+    </a>
+    <a href="https://codecov.io/gh/brokenhandsio/vapor-oauth">
+        <img src="https://codecov.io/gh/brokenhandsio/vapor-oauth/branch/master/graph/badge.svg" alt="Code Coverage">
+    </a>
+    <a href="https://raw.githubusercontent.com/brokenhandsio/vapor-oauth/master/LICENSE">
+        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License">
+    </a>
+</p>
 
 Vapor OAuth is an OAuth2 Provider Library written for Vapor. You can integrate the library into your server to provide authorization for applications to connect to your APIs.
 

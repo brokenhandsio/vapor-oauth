@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://user-images.githubusercontent.com/9938337/29741272-2c09fb0e-8a61-11e7-8697-0ce963bc4b5a.png" alt=“Vapor OAuth“>
+    <img src="https://user-images.githubusercontent.com/9938337/29741272-2c09fb0e-8a61-11e7-8697-0ce963bc4b5a.png" alt="Vapor OAuth">
     <br>
     <br>
     <a href="https://swift.org">

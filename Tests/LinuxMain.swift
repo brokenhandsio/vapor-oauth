@@ -14,6 +14,7 @@ XCTMain([
     testCase(ImplicitGrantTests.allTests),
     testCase(AuthCodeResourceServerTests.allTests),
     testCase(TokenIntrospectionTests.allTests),
+    testCase(DefaultImplementationTests.allTests),
 ])
 
 #endif

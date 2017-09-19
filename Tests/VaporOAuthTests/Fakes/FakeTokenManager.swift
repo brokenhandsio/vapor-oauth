@@ -1,4 +1,4 @@
-import OAuth
+import VaporOAuth
 import Foundation
 import Node
 

@@ -1,5 +1,5 @@
 import XCTest
-import OAuth
+import VaporOAuth
 @testable import Vapor
 import Sessions
 import Cookies
@@ -45,7 +45,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let fakeCodeManager = FakeCodeManager()
         let clientRetriever = StaticClientRetriever(clients: [newClient])
         let fakeUserManager = FakeUserManager()
-        let oauthProvider = OAuth.Provider(codeManager: fakeCodeManager, tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2])
+        let oauthProvider = VaporOAuth.Provider(codeManager: fakeCodeManager, tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2])
         
         try! config.addProvider(oauthProvider)
         config.addConfigurable(middleware: SessionsMiddleware.init, name: "sessions")
@@ -281,7 +281,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         let clientRetriever = StaticClientRetriever(clients: [newClient])
         let fakeUserManager = FakeUserManager()
         let resourceServerRetriever = FakeResourceServerRetriever()
-        let oauthProvider = OAuth.Provider(tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2], resourceServerRetriever: resourceServerRetriever)
+        let oauthProvider = VaporOAuth.Provider(tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2], resourceServerRetriever: resourceServerRetriever)
         try authConfig.addProvider(oauthProvider)
         authConfig.addConfigurable(middleware: SessionsMiddleware.init, name: "sessions")
         try authConfig.set("droplet.middleware", ["error", "sessions"])

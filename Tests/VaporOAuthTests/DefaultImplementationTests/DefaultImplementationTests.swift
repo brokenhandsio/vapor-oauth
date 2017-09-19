@@ -1,5 +1,5 @@
 import XCTest
-@testable import OAuth
+@testable import VaporOAuth
 import Vapor
 
 class DefaultImplementationTests: XCTestCase {

@@ -1,5 +1,5 @@
 import XCTest
-import OAuth
+import VaporOAuth
 import Vapor
 import Sessions
 

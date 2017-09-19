@@ -1,7 +1,7 @@
 #if os(Linux)
 
 import XCTest
-@testable import OAuthTests
+@testable import VaporOAuthTests
 
 XCTMain([
     // OAuthTests

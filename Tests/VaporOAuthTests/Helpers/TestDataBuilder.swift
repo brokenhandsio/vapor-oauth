@@ -1,4 +1,4 @@
-import OAuth
+import VaporOAuth
 import Vapor
 import Cookies
 import Sessions
@@ -20,7 +20,7 @@ class TestDataBuilder
             try config.set("droplet.log", "capturing-log")
         }
         
-        let provider = OAuth.Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes, resourceServerRetriever: resourceServerRetriever)
+        let provider = VaporOAuth.Provider(codeManager: codeManager, tokenManager: tokenManager, clientRetriever: clientRetriever, authorizeHandler: authorizeHandler, userManager: userManager, validScopes: validScopes, resourceServerRetriever: resourceServerRetriever)
         
         try config.addProvider(provider)
         

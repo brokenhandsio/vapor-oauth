@@ -1,4 +1,4 @@
-import OAuth
+import VaporOAuth
 import Node
 
 class StubCodeManager: CodeManager {

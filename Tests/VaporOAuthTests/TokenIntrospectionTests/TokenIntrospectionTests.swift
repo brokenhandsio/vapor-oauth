@@ -1,5 +1,5 @@
 import XCTest
-@testable import OAuth
+import VaporOAuth
 import Vapor
 import Foundation
 

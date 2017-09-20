@@ -36,13 +36,13 @@ dependencies: [
 Next import the library into where you set up your `Droplet`:
 
 ```swift
-import OAuth
+import VaporOAuth
 ```
 
 Then add the provider to your `Config`:
 
 ```swift
-try addProvider(OAuth.Provider(codeManager: MyCodeManager(), tokenManager: MyTokenManager(), clientRetriever: MyClientRetriever(), authorizeHandler: MyAuthHandler(), userManager: MyUserManager(), validScopes: ["view_profile", "edit_profile"], resourceServerRetriever: MyResourceServerRetriever()))
+try addProvider(VaporOAuth.Provider(codeManager: MyCodeManager(), tokenManager: MyTokenManager(), clientRetriever: MyClientRetriever(), authorizeHandler: MyAuthHandler(), userManager: MyUserManager(), validScopes: ["view_profile", "edit_profile"], resourceServerRetriever: MyResourceServerRetriever()))
 ```
 
 To integrate the library, you need to set up a number of things, which implement the various protocols required:

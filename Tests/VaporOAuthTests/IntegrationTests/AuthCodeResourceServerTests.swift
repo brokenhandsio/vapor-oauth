@@ -305,7 +305,6 @@ class AuthCodeResourceServerTests: XCTestCase {
         
         XCTAssertEqual(unauthorizedResponse.status, .unauthorized)
         
-        
         let fakeTokenString = "123456789ABCDEFHGUIO"
         let accessToken = AccessToken(tokenString: fakeTokenString, clientID: newClientID, userID: userID, scopes: ["email", "user"], expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[fakeTokenString] = accessToken
@@ -329,6 +328,25 @@ class AuthCodeResourceServerTests: XCTestCase {
         XCTAssertEqual(userResponse.json?["username"]?.string, username)
         XCTAssertEqual(userResponse.json?["email"]?.string, email)
 
+        let tokenWithWrongScopeString = "jejiofjewojioe"
+        let accessTokenWrongScopes = AccessToken(tokenString: tokenWithWrongScopeString, clientID: newClientID, userID: userID, scopes: ["wrong"], expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[tokenWithWrongScopeString] = accessTokenWrongScopes
+
+        let wrongScopeRequest = Request(method: .get, uri: "/protected/")
+        wrongScopeRequest.headers[.authorization] = "Bearer \(tokenWithWrongScopeString)"
+        let wrongScopeResponse = try resourceDrop.respond(to: wrongScopeRequest)
+
+        XCTAssertEqual(wrongScopeResponse.status, .unauthorized)
+
+        let tokenWithNoScopes = "fiewjfowe"
+        let accessTokenWithNoScopes = AccessToken(tokenString: tokenWithNoScopes, clientID: newClientID, userID: userID, scopes: nil, expiryTime: Date().addingTimeInterval(60))
+        fakeTokenManager.accessTokens[tokenWithNoScopes] = accessTokenWithNoScopes
+
+        let noScopeRequest = Request(method: .get, uri: "/protected/")
+        noScopeRequest.headers[.authorization] = "Bearer \(tokenWithNoScopes)"
+        let noScopeResponse = try resourceDrop.respond(to: noScopeRequest)
+
+        XCTAssertEqual(noScopeResponse.status, .unauthorized)
     }
     
 }

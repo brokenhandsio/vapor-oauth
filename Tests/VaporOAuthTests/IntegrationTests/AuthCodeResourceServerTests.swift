@@ -20,6 +20,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         ("testAccessingProtectedRouteWithLowercaseHeaderWorks", testAccessingProtectedRouteWithLowercaseHeaderWorks),
         ("testThatAccessingProtectedRouteWithExpiredTokenReturns401", testThatAccessingProtectedRouteWithExpiredTokenReturns401),
         ("testTokenIntrospectionEndpoint", testTokenIntrospectionEndpoint),
+        ("testErrorThrownIfTryingToInitialiseFromConfig", testErrorThrownIfTryingToInitialiseFromConfig),
         ]
     
     // MARK: - Properties
@@ -347,6 +348,21 @@ class AuthCodeResourceServerTests: XCTestCase {
         let noScopeResponse = try resourceDrop.respond(to: noScopeRequest)
 
         XCTAssertEqual(noScopeResponse.status, .unauthorized)
+    }
+
+    func testErrorThrownIfTryingToInitialiseFromConfig() throws {
+        var errorThrown = false
+        var errorDescription: String?
+        let config = Config([:])
+        do {
+            try config.addProvider(VaporOAuth.Provider.self)
+        } catch let error as OAuthProviderError {
+            errorThrown = true
+            errorDescription = error.description
+        }
+
+        XCTAssertTrue(errorThrown)
+        XCTAssertEqual("The OAuth Provider cannot be created with a Config and must be created manually", errorDescription)
     }
     
 }

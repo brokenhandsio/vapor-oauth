@@ -12,5 +12,6 @@ xcuserdata
 DerivedData/
 .DS_Store
 Package.pins
+Package.resolved
 
 # End of https://www.gitignore.io/api/vapor

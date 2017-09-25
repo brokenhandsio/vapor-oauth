@@ -1,7 +1,7 @@
 #if os(Linux)
 
 import XCTest
-@testable import OAuthTests
+@testable import VaporOAuthTests
 
 XCTMain([
     // OAuthTests
@@ -13,6 +13,8 @@ XCTMain([
     testCase(TokenRefreshTests.allTests),
     testCase(ImplicitGrantTests.allTests),
     testCase(AuthCodeResourceServerTests.allTests),
+    testCase(TokenIntrospectionTests.allTests),
+    testCase(DefaultImplementationTests.allTests),
 ])
 
 #endif

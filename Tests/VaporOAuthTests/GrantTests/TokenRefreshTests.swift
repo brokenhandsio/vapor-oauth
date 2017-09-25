@@ -64,7 +64,7 @@ class TokenRefreshTests: XCTestCase {
         #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
             let thisClass = type(of: self)
             let linuxCount = thisClass.allTests.count
-            let darwinCount = Int(thisClass.defaultTestSuite().testCaseCount)
+            let darwinCount = Int(thisClass.defaultTestSuite.testCaseCount)
             XCTAssertEqual(linuxCount, darwinCount, "\(darwinCount - linuxCount) tests are missing from allTests")
         #endif
     }

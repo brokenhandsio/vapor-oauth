@@ -3,7 +3,7 @@
     <br>
     <br>
     <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/Swift-3.1-brightgreen.svg" alt="Language">
+        <img src="http://img.shields.io/badge/Swift-4-brightgreen.svg" alt="Language">
     </a>
     <a href="https://travis-ci.org/brokenhandsio/vapor-oauth">
         <img src="https://travis-ci.org/brokenhandsio/vapor-oauth.svg?branch=master" alt="Build Status">
@@ -40,7 +40,7 @@ Vapor OAuth can be added to your Vapor add with a simple provider. To get starte
 ```swift
 dependencies: [
     ...,
-    .Package(url: "https://github.com/brokenhandsio/vapor-oauth", majorVersion: 0)
+    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "0.6.0"))
 ]
 ```
 

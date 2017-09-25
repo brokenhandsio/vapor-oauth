@@ -68,7 +68,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
             let thisClass = type(of: self)
             let linuxCount = thisClass.allTests.count
-            let darwinCount = Int(thisClass.defaultTestSuite().testCaseCount)
+            let darwinCount = Int(thisClass.defaultTestSuite.testCaseCount)
             XCTAssertEqual(linuxCount, darwinCount, "\(darwinCount - linuxCount) tests are missing from allTests")
         #endif
     }
@@ -117,7 +117,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         for queryPart in queryParts {
             if queryPart.hasPrefix("code=") {
                 let codeStartIndex = queryPart.index(queryPart.startIndex, offsetBy: 5)
-                codePart = queryPart.substring(from: codeStartIndex)
+                codePart = String(queryPart[codeStartIndex...])
             }
         }
         

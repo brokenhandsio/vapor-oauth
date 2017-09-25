@@ -60,7 +60,11 @@ extension Request {
             throw Abort(.forbidden)
         }
 
+        #if swift(>=4)
+        let token  = String(authHeader[authHeader.index(authHeader.startIndex, offsetBy: 7)...])
+        #else
         let token = authHeader.substring(from: authHeader.index(authHeader.startIndex, offsetBy: 7))
+        #endif
 
         guard !token.isEmpty else {
             throw Abort(.forbidden)

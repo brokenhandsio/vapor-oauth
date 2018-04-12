@@ -5,7 +5,7 @@ import Node
 public final class OAuthUser: Authenticatable, Extendable {
     public let username: String
     public let emailAddress: String?
-    public let password: Bytes
+    public var password: Bytes
     // swiftlint:disable:next identifier_name
     public var id: Identifier?
 

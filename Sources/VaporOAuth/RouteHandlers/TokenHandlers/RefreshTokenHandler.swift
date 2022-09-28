@@ -17,10 +17,10 @@ struct RefreshTokenHandler {
         }
 
         guard let refreshTokenRequest = refreshTokenRequestReturned else {
-            throw Abort.serverError
+            throw Abort(.internalServerError)
         }
 
-        let scopesString = request.data[OAuthRequestParameters.scope]?.string
+        let scopesString: String? = request.content[OAuthRequestParameters.scope]
         var scopesRequested = scopesString?.components(separatedBy: " ")
 
         if let scopes = scopesRequested {
@@ -62,13 +62,13 @@ struct RefreshTokenHandler {
     }
 
     private func validateRefreshTokenRequest(_ request: Request) throws -> (Response?, RefreshTokenRequest?) {
-        guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
+        guard let clientID: String = request.content[OAuthRequestParameters.clientID] else {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                                           description: "Request was missing the 'client_id' parameter")
             return (errorResponse, nil)
         }
 
-        guard let clientSecret = request.data[OAuthRequestParameters.clientSecret]?.string else {
+        guard let clientSecret: String = request.content[OAuthRequestParameters.clientSecret] else {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                                           description: "Request was missing the 'client_secret' parameter")
             return (errorResponse, nil)
@@ -89,7 +89,7 @@ struct RefreshTokenHandler {
             return (errorResponse, nil)
         }
 
-        guard let refreshTokenString = request.data[OAuthRequestParameters.refreshToken]?.string else {
+        guard let refreshTokenString: String = request.content[OAuthRequestParameters.refreshToken] else {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                                           description: "Request was missing the 'refresh_token' parameter")
             return (errorResponse, nil)

@@ -9,24 +9,24 @@ struct AuthCodeTokenHandler {
     let tokenResponseGenerator: TokenResponseGenerator
 
     func handleAuthCodeTokenRequest(_ request: Request) throws -> Response {
-        guard let codeString = request.data[OAuthRequestParameters.code]?.string else {
+        guard let codeString: String = request.content[OAuthRequestParameters.code] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'code' parameter")
         }
 
-        guard let redirectURI = request.data[OAuthRequestParameters.redirectURI]?.string else {
+        guard let redirectURI: String = request.content[OAuthRequestParameters.redirectURI] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'redirect_uri' parameter")
         }
 
-        guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
+        guard let clientID: String = request.content[OAuthRequestParameters.clientID] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'client_id' parameter")
         }
 
         do {
             try clientValidator.authenticateClient(clientID: clientID,
-                                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                                   clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
                                                    grantType: .authorization)
         } catch {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,

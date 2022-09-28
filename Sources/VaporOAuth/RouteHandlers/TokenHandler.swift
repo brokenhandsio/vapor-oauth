@@ -1,5 +1,4 @@
 import Vapor
-import HTTP
 
 struct TokenHandler {
 
@@ -11,7 +10,7 @@ struct TokenHandler {
     let passwordTokenHandler: PasswordTokenHandler
 
     init(clientValidator: ClientValidator, tokenManager: TokenManager, scopeValidator: ScopeValidator,
-         codeManager: CodeManager, userManager: UserManager, log: LogProtocol) {
+         codeManager: CodeManager, userManager: UserManager, logger: Logger) {
         tokenResponseGenerator = TokenResponseGenerator()
         refreshTokenHandler = RefreshTokenHandler(scopeValidator: scopeValidator, tokenManager: tokenManager,
                                                   clientValidator: clientValidator, tokenAuthenticator: tokenAuthenticator,
@@ -24,12 +23,12 @@ struct TokenHandler {
                                                     codeManager: codeManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
         passwordTokenHandler = PasswordTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
-                                                    userManager: userManager, log: log, tokenManager: tokenManager,
+                                                    userManager: userManager, logger: logger, tokenManager: tokenManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
     }
 
     func handleRequest(request: Request) throws -> Response {
-        guard let grantType = request.data[OAuthRequestParameters.grantType]?.string else {
+        guard let grantType: String = request.content[OAuthRequestParameters.grantType] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'grant_type' parameter")
         }

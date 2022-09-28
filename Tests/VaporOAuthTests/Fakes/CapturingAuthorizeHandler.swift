@@ -1,9 +1,7 @@
 import VaporOAuth
-import HTTP
-import URI
+import Vapor
 
 class CapturingAuthoriseHandler: AuthorizeHandler {
-
     private(set) var request: Request?
     private(set) var responseType: String?
     private(set) var clientID: String?
@@ -12,7 +10,10 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
     private(set) var state: String?
     private(set) var csrfToken: String?
     
-    func handleAuthorizationRequest(_ request: Request, authorizationRequestObject: AuthorizationRequestObject) throws -> ResponseRepresentable {
+    func handleAuthorizationRequest(
+        _ request: Request,
+        authorizationRequestObject: AuthorizationRequestObject
+    ) async throws -> Response {
         self.request = request
         self.responseType = authorizationRequestObject.responseType
         self.clientID = authorizationRequestObject.clientID
@@ -21,12 +22,12 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
         self.state = authorizationRequestObject.state
         self.csrfToken = authorizationRequestObject.csrfToken
         
-        return "Allow/Deny"
+        return Response(body: .init(string: "Allow/Deny"))
     }
     
     private(set) var authorizationError: AuthorizationError?
-    func handleAuthorizationError(_ errorType: AuthorizationError) -> ResponseRepresentable {
+    func handleAuthorizationError(_ errorType: AuthorizationError) async throws -> Response {
         authorizationError = errorType
-        return "Error"
+        return Response(body: .init(string: "Error"))
     }
 }

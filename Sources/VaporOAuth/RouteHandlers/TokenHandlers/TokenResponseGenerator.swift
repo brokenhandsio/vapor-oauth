@@ -1,39 +1,42 @@
 import Vapor
-import HTTP
 
 struct TokenResponseGenerator {
-    func createResponse(error: String, description: String, status: Status = .badRequest) throws -> Response {
-        var json = JSON()
-        try json.set(OAuthResponseParameters.error, error)
-        try json.set(OAuthResponseParameters.errorDescription, description)
-
-        return try createResponseForToken(status: status, json: json)
+    func createResponse(error: String, description: String, status: HTTPStatus = .badRequest) throws -> Response {
+        let jsonDictionary = [
+            OAuthResponseParameters.error: error,
+            OAuthResponseParameters.errorDescription: description
+        ]
+        let json = try JSONSerialization.data(withJSONObject: jsonDictionary)
+        return try createResponseForToken(status: status, jsonData: json)
     }
 
     func createResponse(accessToken: AccessToken, refreshToken: RefreshToken?,
                         expires: Int, scope: String?) throws -> Response {
-
-        var json = JSON()
-        try json.set(OAuthResponseParameters.tokenType, "bearer")
-        try json.set(OAuthResponseParameters.expires, expires)
-        try json.set(OAuthResponseParameters.accessToken, accessToken.tokenString)
+        var jsonDictionary = [
+            OAuthResponseParameters.tokenType: "bearer",
+            OAuthResponseParameters.expires: expires,
+            OAuthResponseParameters.accessToken: accessToken.tokenString
+        ] as [String : Any]
 
         if let refreshToken = refreshToken {
-            try json.set(OAuthResponseParameters.refreshToken, refreshToken.tokenString)
+            jsonDictionary[OAuthResponseParameters.refreshToken] = refreshToken.tokenString
         }
 
         if let scope = scope {
-            try json.set(OAuthResponseParameters.scope, scope)
+            jsonDictionary[OAuthResponseParameters.scope] = scope
         }
 
-        return try createResponseForToken(status: .ok, json: json)
+        var json = try JSONSerialization.data(withJSONObject: jsonDictionary)
+        return try createResponseForToken(status: .ok, jsonData: json)
     }
 
-    private func createResponseForToken(status: Status, json: JSON) throws -> Response {
-        let response = try Response(status: status, json: json)
+    private func createResponseForToken(status: HTTPStatus, jsonData: Data) throws -> Response {
+        let response = Response(status: status)
 
-        response.headers[.pragma] = "no-cache"
-        response.headers[.cacheControl] = "no-store"
+        response.body = .init(data: jsonData)
+
+        response.headers.replaceOrAdd(name: "pragma", value: "no-cache")
+        response.headers.cacheControl = HTTPHeaders.CacheControl(noStore: true)
 
         return response
     }

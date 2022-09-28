@@ -1,16 +1,13 @@
-import HTTP
-import JSON
-import Foundation
+import Vapor
 
 struct TokenIntrospectionHandler {
-
     let clientValidator: ClientValidator
     let tokenManager: TokenManager
     let userManager: UserManager
 
-    func handleRequest(_ req: Request) throws -> ResponseRepresentable {
+    func handleRequest(_ req: Request) async throws -> Response {
 
-        guard let tokenString = req.data[OAuthRequestParameters.token]?.string else {
+        guard let tokenString: String = req.content[OAuthRequestParameters.token] else {
             return try createErrorResponse(status: .badRequest,
                                            errorMessage: OAuthResponseParameters.ErrorType.missingToken,
                                            errorDescription: "The token parameter is required")
@@ -39,40 +36,40 @@ struct TokenIntrospectionHandler {
 
     func createTokenResponse(active: Bool, expiryDate: Date?, clientID: String?, scopes: String? = nil,
                              user: OAuthUser? = nil) throws -> Response {
-        var json = JSON()
-        try json.set(OAuthResponseParameters.active, active)
+        var jsonDictionary = [OAuthResponseParameters.active: active] as [String: Any]
 
         if let clientID = clientID {
-            try json.set(OAuthResponseParameters.clientID, clientID)
+            jsonDictionary[OAuthResponseParameters.clientID] = clientID
         }
 
         if let scopes = scopes {
-            try json.set(OAuthResponseParameters.scope, scopes)
+            jsonDictionary[OAuthResponseParameters.scope] = scopes
         }
 
         if let user = user {
-            try json.set(OAuthResponseParameters.userID, user.id)
-            try json.set(OAuthResponseParameters.username, user.username)
+            jsonDictionary[OAuthResponseParameters.userID] = user.id
+            jsonDictionary[OAuthResponseParameters.username] = user.username
             if let email = user.emailAddress {
-                try json.set(OAuthResponseParameters.email, email)
+                jsonDictionary[OAuthResponseParameters.email] = email
             }
         }
 
         if let expiryDate = expiryDate {
-            try json.set(OAuthResponseParameters.expiry, Int(expiryDate.timeIntervalSince1970))
+            jsonDictionary[OAuthResponseParameters.expiry] = Int(expiryDate.timeIntervalSince1970)
         }
 
         let response = Response(status: .ok)
-        response.json = json
+        response.body = try .init(data: JSONSerialization.data(withJSONObject: jsonDictionary))
         return response
     }
 
-    func createErrorResponse(status: Status, errorMessage: String, errorDescription: String) throws -> Response {
-        var json = JSON()
-        try json.set(OAuthResponseParameters.error, errorMessage)
-        try json.set(OAuthResponseParameters.errorDescription, errorDescription)
+    func createErrorResponse(status: HTTPStatus, errorMessage: String, errorDescription: String) throws -> Response {
         let response = Response(status: status)
-        response.json = json
+        let jsonDictionary = [
+            OAuthResponseParameters.error: errorMessage,
+            OAuthResponseParameters.errorDescription: errorDescription
+        ]
+        response.body = try .init(data: JSONSerialization.data(withJSONObject: jsonDictionary))
         return response
     }
 }

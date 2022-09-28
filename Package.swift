@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "VaporOAuth",
     platforms: [
-       .macOS(.v12)
+        .macOS(.v12)
     ],
     products: [
         .library(
@@ -19,6 +19,10 @@ let package = Package(
         .target(
             name: "VaporOAuth",
             dependencies: [.product(name: "Vapor", package: "vapor")]
-        )
+        ),
+        .testTarget(name: "VaporOAuthTests", dependencies: [
+            .target(name: "VaporOAuth"),
+            .product(name: "XCTVapor", package: "vapor")
+        ])
     ]
 )

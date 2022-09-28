@@ -1,17 +1,15 @@
-import Authentication
-import Core
-import Node
+import Vapor
 
 public final class OAuthUser: Authenticatable, Extendable {
     public let username: String
     public let emailAddress: String?
-    public var password: Bytes
+    public var password: ByteBuffer
     // swiftlint:disable:next identifier_name
-    public var id: Identifier?
+    public var id: String?
 
-    public var extend: [String: Any] = [:]
+    public var extend: Extend = .init()
 
-    public init(userID: Identifier? = nil, username: String, emailAddress: String?, password: Bytes) {
+    public init(userID: String? = nil, username: String, emailAddress: String?, password: ByteBuffer) {
         self.username = username
         self.emailAddress = emailAddress
         self.password = password

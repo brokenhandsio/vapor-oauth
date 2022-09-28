@@ -1,7 +1,6 @@
 import Vapor
 
 public struct OAuth2Provider {
-
     let tokenManager: TokenManager
     let userManager: UserManager
     let authorizePostHandler: AuthorizePostHandler
@@ -43,10 +42,9 @@ public struct OAuth2Provider {
     }
 
     func addRoutes() {
-        let sessionsGroup = app.grouped(app.sessions.middleware)
-        sessionsGroup.get("oauth", "authorize", use: authorizeGetHandler.handleRequest)
-        sessionsGroup.post("oauth", "authorize", use: authorizePostHandler.handleRequest)
-        sessionsGroup.post("oauth", "token", use: tokenHandler.handleRequest)
+        app.get("oauth", "authorize", use: authorizeGetHandler.handleRequest)
+        app.post("oauth", "authorize", use: authorizePostHandler.handleRequest)
+        app.post("oauth", "token", use: tokenHandler.handleRequest)
 
         let tokenIntrospectionAuthMiddleware = TokenIntrospectionAuthMiddleware(resourceServerAuthenticator: resourceServerAuthenticator)
         let resourceServerProtected = app.routes.grouped(tokenIntrospectionAuthMiddleware)

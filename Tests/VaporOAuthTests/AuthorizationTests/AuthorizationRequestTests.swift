@@ -15,7 +15,6 @@ class AuthorizationRequestTests: XCTestCase {
     // MARK: - Overrides
 
     override func setUp() async throws {
-        app = try Application.testable()
         fakeClientRetriever = FakeClientGetter()
         capturingAuthoriseHandler = CapturingAuthoriseHandler()
 
@@ -26,12 +25,10 @@ class AuthorizationRequestTests: XCTestCase {
         )
         fakeClientRetriever.validClients[clientID] = oauthClient
 
-        app.oAuth2Provider = TestDataBuilder.getOAuth2Provider(
+        app = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientRetriever,
-            authorizeHandler: capturingAuthoriseHandler,
-            app: app
+            authorizeHandler: capturingAuthoriseHandler
         )
-        app.oAuth2Provider.addRoutes()
     }
 
     // MARK: - Tests
@@ -66,13 +63,20 @@ class AuthorizationRequestTests: XCTestCase {
         XCTAssertEqual(capturingAuthoriseHandler.clientID, implicitClientID)
         XCTAssertEqual(capturingAuthoriseHandler.redirectURI, redirectURI)
     }
-//
-//    func testThatAuthorizeRequestResponseTypeRedirectsBackToClientWithErrorCode() throws {
-//        let response = try respondToOAuthRequest(responseType: nil, clientID: clientID, redirectURI: redirectURI)
-//
-//        XCTAssertEqual(response.status, .seeOther)
-//        XCTAssertEqual(response.headers[.location], "\(redirectURI)?error=invalid_request&error_description=Request+was+missing+the+response_type+parameter")
-//    }
+
+    func testThatAuthorizeRequestResponseTypeRedirectsBackToClientWithErrorCode() async throws {
+        let response = try await respondToOAuthRequest(
+            responseType: nil,
+            clientID: clientID,
+            redirectURI: redirectURI.string
+        )
+
+        XCTAssertEqual(response.status, .seeOther)
+        XCTAssertEqual(
+            response.headers.first(name: "location"),
+            "\(redirectURI.string)?error=invalid_request&error_description=Request+was+missing+the+response_type+parameter"
+        )
+    }
 //
 //    func testThatBadRequestRedirectsBackToClientRedirectURI() throws {
 //        let differentURI = "https://api.test.com/cb"

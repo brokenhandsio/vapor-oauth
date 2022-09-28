@@ -3,29 +3,41 @@ import XCTVapor
 import Vapor
 
 class TestDataBuilder {
-    static func getOAuth2Provider(
+    static func getOAuth2Application(
         codeManager: CodeManager = EmptyCodeManager(),
         tokenManager: TokenManager = StubTokenManager(),
         clientRetriever: ClientRetriever = FakeClientGetter(),
         userManager: UserManager = EmptyUserManager(),
         authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(),
         validScopes: [String]? = nil,
-        resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
-        app: Application
+        resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever()
 //        environment: Environment? = nil,
 //        log: CapturingLogger? = nil,
 //        sessions: FakeSessions? = nil
-    ) -> OAuth2Provider {
-        return OAuth2Provider(
-            codeManager: codeManager,
-            tokenManager: tokenManager,
-            clientRetriever: clientRetriever,
-            authorizeHandler: authorizeHandler,
-            userManager: userManager,
-            validScopes: validScopes,
-            resourceServerRetriever: resourceServerRetriever,
-            app: app
+    ) throws -> Application {
+        let app = Application(.testing)
+        app.middleware.use(app.sessions.middleware)
+
+        app.lifecycle.use(
+            Provider(
+                codeManager: codeManager,
+                tokenManager: tokenManager,
+                clientRetriever: clientRetriever,
+                authorizeHandler: authorizeHandler,
+                userManager: userManager,
+                validScopes: validScopes,
+                resourceServerRetriever: resourceServerRetriever
+            )
         )
+
+        do {
+            _ = try app.testable()
+        } catch {
+            app.shutdown()
+            throw error
+        }
+
+        return app
     }
 
 //    static func getOAuthDroplet(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager = StubTokenManager(), clientRetriever: ClientRetriever = FakeClientGetter(), userManager: UserManager = EmptyUserManager(), authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(), validScopes: [String]? = nil, resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(), environment: Environment? = nil, log: CapturingLogger? = nil, sessions: FakeSessions? = nil) throws -> Droplet {

@@ -6,7 +6,7 @@ class FakeUserManager: UserManager {
     func authenticateUser(username: String, password: String) -> String? {
         for user in users {
             if user.username == username {
-                if user.password.string == password {
+                if user.password == password {
                     return user.id
                 }
             }

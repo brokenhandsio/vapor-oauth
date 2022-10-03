@@ -162,66 +162,94 @@ class TestDataBuilder {
             }
         }
     }
-//
-//    static func getAuthResponseResponse(with drop: Droplet, approve: Bool?, clientID: String?, redirectURI: String?, responseType: String?, scope: String?, state: String?, user: OAuthUser?, csrfToken: String?, sessionCookie: Cookie? = nil, sessionID: String? = nil) throws -> Response {
-//        var queries: [String] = []
-//
-//        if let clientID = clientID {
-//            queries.append("client_id=\(clientID)")
-//        }
-//
-//        if let redirectURI = redirectURI {
-//            queries.append("redirect_uri=\(redirectURI)")
-//        }
-//
-//        if let state = state {
-//            queries.append("state=\(state)")
-//        }
-//
-//        if let scope = scope {
-//            queries.append("scope=\(scope)")
-//        }
-//
-//        if let responseType = responseType {
-//            queries.append("response_type=\(responseType)")
-//        }
-//
-//        let requestQuery = queries.joined(separator: "&")
-//
-//        let authRequest = Request(method: .post, uri: "/oauth/authorize?\(requestQuery)")
-//
-//        var data = Node([:], in: nil)
-//
-//        if let approve = approve {
-//            try data.set("applicationAuthorized", approve)
-//        }
-//
-//        if let csrfToken = csrfToken {
-//            try data.set("csrfToken", csrfToken)
-//        }
-//
+
+    static func getAuthResponseResponse(
+        with app: Application,
+        approve: Bool?,
+        clientID: String?,
+        redirectURI: String?,
+        responseType: String?,
+        scope: String?,
+        state: String?,
+        user: OAuthUser?,
+        csrfToken: String?,
+//        sessionCookie: Cookie? = nil,
+        sessionID: String? = nil
+    ) async throws -> XCTHTTPResponse {
+        var queries: [String] = []
+
+        if let clientID = clientID {
+            queries.append("client_id=\(clientID)")
+        }
+
+        if let redirectURI = redirectURI {
+            queries.append("redirect_uri=\(redirectURI)")
+        }
+
+        if let state = state {
+            queries.append("state=\(state)")
+        }
+
+        if let scope = scope {
+            queries.append("scope=\(scope)")
+        }
+
+        if let responseType = responseType {
+            queries.append("response_type=\(responseType)")
+        }
+
+        let requestQuery = queries.joined(separator: "&")
+
+        struct RequestBody: Encodable {
+            var applicationAuthorized: Bool?
+            var csrfToken: String?
+            var authAuthenticated: OAuthUser?
+
+            enum CodingKeys: String, CodingKey {
+                case applicationAuthorized, csrfToken
+                case authAuthenticated = "auth-authenticated"
+            }
+        }
+
+        var requestBody = RequestBody()
+        requestBody.applicationAuthorized = approve
+        requestBody.csrfToken = csrfToken
+        requestBody.authAuthenticated = user
+
 //        if let sessionCookie = sessionCookie {
 //            authRequest.cookies.insert(sessionCookie)
 //        }
-//
+
 //        if let sessionID = sessionID {
 //            let customSessionCookie = Cookie(name: "vapor-session", value: sessionID)
 //            authRequest.cookies.insert(customSessionCookie)
 //        }
-//
-//        authRequest.formURLEncoded = data
-//
-//        let authAuthenticatedKey = "auth-authenticated"
-//
-//        if let user = user {
-//            authRequest.storage[authAuthenticatedKey] = user
-//        }
-//
-//        return try drop.respond(to: authRequest)
-//    }
-//
-//    static let anyUserID: Identifier = "12345-asbdsadi"
-//    static func anyOAuthUser() -> OAuthUser {
-//        return OAuthUser(userID: TestDataBuilder.anyUserID, username: "hansolo", emailAddress: "han.solo@therebelalliance.com", password: "leia".makeBytes())
-//    }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try app.test(
+                    .POST,
+                    "/oauth/authorize?\(requestQuery)",
+                    beforeRequest: { request in
+                        try request.content.encode(requestBody, as: .urlEncodedForm)
+                    },
+                    afterResponse: { response in
+                        continuation.resume(returning: response)
+                    }
+                )
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
+    static let anyUserID: String = "12345-asbdsadi"
+    static func anyOAuthUser() -> OAuthUser {
+        return OAuthUser(
+            userID: TestDataBuilder.anyUserID,
+            username: "hansolo",
+            emailAddress: "han.solo@therebelalliance.com",
+            password: "leia"
+        )
+    }
 }

@@ -96,7 +96,7 @@ class RemoteOAuthHelper: OAuthHelperProtocol {
             }
             oauthUser = OAuthUser(userID: userID, username: username,
                                   emailAddress: tokenInfoJSON[String.self, at: OAuthResponseParameters.email],
-                                  password: ByteBuffer())
+                                  password: "")
         }
 
         self.remoteTokenResponse = RemoteTokenResponse(scopes: scopes, user: oauthUser)

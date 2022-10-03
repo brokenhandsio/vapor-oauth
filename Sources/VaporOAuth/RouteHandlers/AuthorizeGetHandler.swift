@@ -120,7 +120,7 @@ struct AuthorizeGetHandler {
             redirectString += "&state=\(state)"
         }
 
-        return request.redirect(to: redirectURI)
+        return request.redirect(to: redirectString)
     }
 }
 

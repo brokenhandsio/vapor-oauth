@@ -16,7 +16,8 @@ public struct OAuth2Provider {
         tokenManager: TokenManager,
         clientRetriever: ClientRetriever,
         authorizeHandler: AuthorizeHandler,
-        userManager: UserManager, validScopes: [String]?,
+        userManager: UserManager,
+        validScopes: [String]?,
         resourceServerRetriever: ResourceServerRetriever,
         app: Application
     ) {

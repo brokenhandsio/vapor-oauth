@@ -10,12 +10,12 @@ class TestDataBuilder {
         userManager: UserManager = EmptyUserManager(),
         authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(),
         validScopes: [String]? = nil,
-        resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever()
-//        environment: Environment? = nil,
+        resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
+        environment: Environment = .testing
 //        log: CapturingLogger? = nil,
 //        sessions: FakeSessions? = nil
     ) throws -> Application {
-        let app = Application(.testing)
+        let app = Application(environment)
         app.middleware.use(app.sessions.middleware)
 
         app.lifecycle.use(

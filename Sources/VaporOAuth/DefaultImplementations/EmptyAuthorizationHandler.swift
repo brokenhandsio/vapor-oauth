@@ -7,10 +7,10 @@ public struct EmptyAuthorizationHandler: AuthorizeHandler {
         _ request: Request,
         authorizationRequestObject: AuthorizationRequestObject
     ) async throws -> Response {
-        Response()
+        Response(body: "")
     }
 
     public func handleAuthorizationError(_ errorType: AuthorizationError) async throws -> Response {
-        Response()
+        Response(body: "")
     }
 }

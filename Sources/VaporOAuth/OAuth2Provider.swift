@@ -8,6 +8,7 @@ public struct OAuth2Provider {
     let tokenHandler: TokenHandler
     let tokenIntrospectionHandler: TokenIntrospectionHandler
     let resourceServerAuthenticator: ResourceServerAuthenticator
+    let authenticateUser: (Request) async throws -> Void
 
     private let app: Application
 
@@ -19,11 +20,13 @@ public struct OAuth2Provider {
         userManager: UserManager,
         validScopes: [String]?,
         resourceServerRetriever: ResourceServerRetriever,
+        authenticateUser: @escaping (Request) async throws -> Void,
         app: Application
     ) {
         self.app = app
         self.tokenManager = tokenManager
         self.userManager = userManager
+        self.authenticateUser = authenticateUser
 
         resourceServerAuthenticator = ResourceServerAuthenticator(resourceServerRetriever: resourceServerRetriever)
         let scopeValidator = ScopeValidator(validScopes: validScopes, clientRetriever: clientRetriever)
@@ -43,13 +46,30 @@ public struct OAuth2Provider {
     }
 
     func addRoutes() {
+        // returning something like "Authenticate with GitHub page"
         app.get("oauth", "authorize", use: authorizeGetHandler.handleRequest)
-        app.post("oauth", "authorize", use: authorizePostHandler.handleRequest)
+        // pressing something like "Allow/Deny Access" button on "Authenticate with GitHub page". Returns a code.
+        app.grouped(AuthorizePostMiddleware(authenticateUser: authenticateUser))
+            .post("oauth", "authorize", use: authorizePostHandler.handleRequest)
+        // client requesting access/refresh token with code from POST /authorize endpoint
         app.post("oauth", "token", use: tokenHandler.handleRequest)
 
         let tokenIntrospectionAuthMiddleware = TokenIntrospectionAuthMiddleware(resourceServerAuthenticator: resourceServerAuthenticator)
         let resourceServerProtected = app.routes.grouped(tokenIntrospectionAuthMiddleware)
         resourceServerProtected.post("oauth", "token_info", use: tokenIntrospectionHandler.handleRequest)
+    }
+}
+
+struct AuthorizePostMiddleware: AsyncMiddleware {
+    private let authenticateUser: (Request) async throws -> Void
+
+    init(authenticateUser: @escaping (Request) async throws -> Void) {
+        self.authenticateUser = authenticateUser
+    }
+
+    func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+        try await authenticateUser(request)
+        return try await next.respond(to: request)
     }
 }
 

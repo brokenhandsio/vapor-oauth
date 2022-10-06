@@ -8,11 +8,13 @@ public final class Provider: LifecycleHandler {
     let userManager: UserManager
     let validScopes: [String]?
     let resourceServerRetriever: ResourceServerRetriever
+    let authenticateUser: (Request) async throws -> Void
 
     public init(codeManager: CodeManager = EmptyCodeManager(), tokenManager: TokenManager,
                 clientRetriever: ClientRetriever, authorizeHandler: AuthorizeHandler = EmptyAuthorizationHandler(),
                 userManager: UserManager = EmptyUserManager(), validScopes: [String]? = nil,
-                resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever()) {
+                resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
+                authenticateUser: @escaping (Request) async throws -> Void) {
 
         self.codeManager = codeManager
         self.tokenManager = tokenManager
@@ -21,6 +23,7 @@ public final class Provider: LifecycleHandler {
         self.userManager = userManager
         self.validScopes = validScopes
         self.resourceServerRetriever = resourceServerRetriever
+        self.authenticateUser = authenticateUser
     }
 
     public func didBoot(_ application: Application) throws {
@@ -32,6 +35,7 @@ public final class Provider: LifecycleHandler {
             userManager: userManager,
             validScopes: validScopes,
             resourceServerRetriever: resourceServerRetriever,
+            authenticateUser: authenticateUser,
             app: application
         )
 

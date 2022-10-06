@@ -30,9 +30,7 @@ struct AuthorizePostHandler {
             throw Abort(.badRequest)
         }
 
-        let session = request.session
-
-        guard session.data[SessionData.csrfToken] == requestObject.csrfToken else {
+        guard request.session.data[SessionData.csrfToken] == requestObject.csrfToken else {
             throw Abort(.badRequest)
         }
 

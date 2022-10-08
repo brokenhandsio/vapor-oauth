@@ -47,6 +47,69 @@ class TestDataBuilder {
         return app
     }
 
+    static func getTokenRequestResponse(
+        with app: Application,
+        grantType: String?,
+        clientID: String?,
+        clientSecret: String?,
+        redirectURI: String? = nil,
+        code: String? = nil,
+        scope: String? = nil,
+        username: String? = nil,
+        password: String? = nil,
+        refreshToken: String? = nil
+    ) async throws -> XCTHTTPResponse {
+        struct RequestData: Content {
+            var grantType: String?
+            var clientID: String?
+            var clientSecret: String?
+            var redirectURI: String?
+            var code: String?
+            var scope: String?
+            var username: String?
+            var password: String?
+            var refreshToken: String?
+
+            enum CodingKeys: String, CodingKey {
+                case username, password, scope, code
+                case grantType = "grant_type"
+                case clientID = "client_id"
+                case clientSecret = "client_secret"
+                case redirectURI = "redirect_uri"
+                case refreshToken = "refresh_token"
+            }
+        }
+
+        let requestData = RequestData(
+            grantType: grantType,
+            clientID: clientID,
+            clientSecret: clientSecret,
+            redirectURI: redirectURI,
+            code: code,
+            scope: scope,
+            username: username,
+            password: password,
+            refreshToken: refreshToken
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try app.test(
+                    .POST,
+                    "/oauth/token/",
+                    beforeRequest: { request in
+                        try request.content.encode(requestData, as: .urlEncodedForm)
+                    },
+                    afterResponse: { response in
+                        continuation.resume(returning: response)
+                    }
+                )
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
     static func getAuthRequestResponse(
         with app: Application,
         responseType: String?,

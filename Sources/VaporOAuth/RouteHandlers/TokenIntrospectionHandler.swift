@@ -7,7 +7,14 @@ struct TokenIntrospectionHandler {
 
     func handleRequest(_ req: Request) async throws -> Response {
 
-        guard let tokenString: String = req.content[OAuthRequestParameters.token] else {
+        struct TokenData: Content {
+            let token: String
+        }
+
+        let tokenString: String
+        do {
+            tokenString = try req.content.decode(TokenData.self).token
+        } catch {
             return try createErrorResponse(status: .badRequest,
                                            errorMessage: OAuthResponseParameters.ErrorType.missingToken,
                                            errorDescription: "The token parameter is required")
@@ -36,40 +43,53 @@ struct TokenIntrospectionHandler {
 
     func createTokenResponse(active: Bool, expiryDate: Date?, clientID: String?, scopes: String? = nil,
                              user: OAuthUser? = nil) throws -> Response {
-        var jsonDictionary = [OAuthResponseParameters.active: active] as [String: Any]
-
-        if let clientID = clientID {
-            jsonDictionary[OAuthResponseParameters.clientID] = clientID
-        }
-
-        if let scopes = scopes {
-            jsonDictionary[OAuthResponseParameters.scope] = scopes
-        }
-
-        if let user = user {
-            jsonDictionary[OAuthResponseParameters.userID] = user.id
-            jsonDictionary[OAuthResponseParameters.username] = user.username
-            if let email = user.emailAddress {
-                jsonDictionary[OAuthResponseParameters.email] = email
-            }
-        }
+        var tokenResponse = TokenResponse(
+            active: active,
+            scope: scopes,
+            clientID: clientID,
+            username: user?.username
+        )
 
         if let expiryDate = expiryDate {
-            jsonDictionary[OAuthResponseParameters.expiry] = Int(expiryDate.timeIntervalSince1970)
+            tokenResponse.exp = Int(expiryDate.timeIntervalSince1970)
         }
 
         let response = Response(status: .ok)
-        response.body = try .init(data: JSONSerialization.data(withJSONObject: jsonDictionary))
+        try response.content.encode(tokenResponse)
         return response
     }
 
     func createErrorResponse(status: HTTPStatus, errorMessage: String, errorDescription: String) throws -> Response {
         let response = Response(status: status)
-        let jsonDictionary = [
-            OAuthResponseParameters.error: errorMessage,
-            OAuthResponseParameters.errorDescription: errorDescription
-        ]
-        response.body = try .init(data: JSONSerialization.data(withJSONObject: jsonDictionary))
+        try response.content.encode(ErrorResponse(error: errorMessage, errorDescription: errorDescription))
         return response
+    }
+}
+
+extension TokenIntrospectionHandler {
+    struct ErrorResponse: Content {
+        var error: String
+        var errorDescription: String
+
+        enum CodingKeys: String, CodingKey {
+            case error
+            case errorDescription = "error_description"
+        }
+    }
+
+    struct TokenResponse: Content {
+        let active: Bool
+        var scope: String?
+        var clientID: String?
+        var username: String?
+        var exp: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case active
+            case scope
+            case clientID = "client_id"
+            case username
+            case exp
+        }
     }
 }

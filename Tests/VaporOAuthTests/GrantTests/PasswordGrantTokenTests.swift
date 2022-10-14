@@ -68,7 +68,6 @@ class PasswordGrantTokenTests: XCTestCase {
         XCTAssertEqual(responseJSON.error, "invalid_request")
         XCTAssertEqual(responseJSON.errorDescription, "Request was missing the 'grant_type' parameter")
         XCTAssertEqual(response.headers.cacheControl?.noStore, true)
-
         XCTAssertEqual(response.headers[HTTPHeaders.Name.pragma], ["no-cache"])
     }
 

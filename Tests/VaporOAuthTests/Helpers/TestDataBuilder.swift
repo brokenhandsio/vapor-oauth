@@ -164,7 +164,7 @@ class TestDataBuilder {
         state: String?,
         user: OAuthUser?,
         csrfToken: String?,
-        sessionCookie: HTTPCookie? = nil,
+        sessionCookie: HTTPCookies? = nil,
         sessionID: String? = nil
     ) async throws -> XCTHTTPResponse {
         var queries: [String] = []
@@ -215,6 +215,9 @@ class TestDataBuilder {
                     beforeRequest: { request in
                         if let sessionID = sessionID {
                             request.headers.cookie = ["vapor-session": .init(string: sessionID)]
+                        }
+                        if let sessionCookie = sessionCookie {
+                            request.headers.cookie = sessionCookie
                         }
                         try request.content.encode(requestBody, as: .urlEncodedForm)
                     },

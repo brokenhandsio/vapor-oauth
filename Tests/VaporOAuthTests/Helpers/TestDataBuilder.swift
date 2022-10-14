@@ -13,7 +13,7 @@ class TestDataBuilder {
         resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
         environment: Environment = .testing,
         authenticateUser: @escaping (Request) async throws -> Void = { req in req.auth.login(TestDataBuilder.anyOAuthUser()) },
-//        log: CapturingLogger? = nil,
+        logger: CapturingLogger? = nil,
         sessions: FakeSessions? = nil
     ) throws -> Application {
         let app = Application(environment)

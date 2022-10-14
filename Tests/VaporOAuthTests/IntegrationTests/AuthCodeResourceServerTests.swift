@@ -54,6 +54,12 @@ class AuthCodeResourceServerTests: XCTestCase {
         app.middleware.use(app.sessions.middleware)
         app.lifecycle.use(oauthProvider)
 
+        app.oAuthHelper = .local(
+            tokenAuthenticator: TokenAuthenticator(),
+            userManager: fakeUserManager,
+            tokenManager: fakeTokenManager
+        )
+
         let resourceController = TestResourceController()
         try app.routes
             .grouped(AuthorizePostMiddleware(authenticateUser: { $0.auth.login(self.newUser) }))
@@ -202,100 +208,90 @@ class AuthCodeResourceServerTests: XCTestCase {
         })
     }
 
-//    func testAccessingProtectedRouteWithoutHeaderReturns403() async throws {
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .forbidden)
-//    }
-//
-//    func testAccessingProtectedRouteWithoutBearerTokenReturns403() async throws {
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Something"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .forbidden)
-//    }
-//
-//    func testAccessingProtectedRouteWithoutTokenReturns403() async throws {
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Bearer "
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .forbidden)
-//    }
-//
-//    func testAccessingProtectedRouteWithInvalidTokenReturns401() async throws {
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Bearer fjiojfeowoi"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .unauthorized)
-//    }
-//
-//    func testAccessingProtectedRouteWithInvalidScopeReturns401() async throws {
-//        let tokenID = "new-token-ID-invalid-scope"
-//        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: ["invalid"], expiryTime: Date().addingTimeInterval(3600))
-//        fakeTokenManager.accessTokens[tokenID] = token
-//
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Bearer \(tokenID)"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .unauthorized)
-//    }
-//
-//    func testAccessingProtectedRouteWithOneInvalidScopeOneValidReturns401() async throws {
-//        let tokenID = "new-token-ID-invalid-scope"
-//        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: ["invalid", scope], expiryTime: Date().addingTimeInterval(3600))
-//        fakeTokenManager.accessTokens[tokenID] = token
-//
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Bearer \(tokenID)"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .unauthorized)
-//    }
-//
-//    func testAccessingProtectedRouteWithLowercaseHeaderWorks() async throws {
-//        let tokenID = "new-token-ID-invalid-scope"
-//        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(3600))
-//        fakeTokenManager.accessTokens[tokenID] = token
-//
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "bearer \(tokenID)"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .ok)
-//    }
-//
-//    func testThatAccessingProtectedRouteWithExpiredTokenReturns401() async throws {
-//        let tokenID = "new-token-ID-invalid-scope"
-//        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(-3600))
-//        fakeTokenManager.accessTokens[tokenID] = token
-//
-//        let protectedRequest = Request(method: .get, uri: "/protected/")
-//
-//        protectedRequest.headers[.authorization] = "Bearer \(tokenID)"
-//
-//        let protectedResponse = try drop.respond(to: protectedRequest)
-//
-//        XCTAssertEqual(protectedResponse.status, .unauthorized)
-//    }
-//
+    func testAccessingProtectedRouteWithoutHeaderReturns403() throws {
+        try app.test(.GET, "protected", afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .forbidden)
+        })
+    }
+
+    func testAccessingProtectedRouteWithoutBearerTokenReturns403() throws {
+        try app.test(.GET, "protected", beforeRequest: { req in
+            req.headers.add(name: "Authorization", value: "Something")
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .forbidden)
+        })
+    }
+
+    func testAccessingProtectedRouteWithoutTokenReturns403() async throws {
+        try app.test(.GET, "protected", beforeRequest: { req in
+            req.headers.add(name: "Authorization", value: "Bearer ")
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .forbidden)
+        })
+    }
+
+    func testAccessingProtectedRouteWithInvalidTokenReturns401() async throws {
+        try app.test(.GET, "/protected/", beforeRequest: { req in
+            req.headers.bearerAuthorization = .init(token: "fjiojfeowoi")
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .unauthorized)
+        })
+    }
+
+    func testAccessingProtectedRouteWithInvalidScopeReturns401() async throws {
+        let tokenID = "new-token-ID-invalid-scope"
+        let token = AccessToken(
+            tokenString: tokenID,
+            clientID: newClientID,
+            userID: newUser.id,
+            scopes: ["invalid"],
+            expiryTime: Date().addingTimeInterval(3600)
+        )
+        fakeTokenManager.accessTokens[tokenID] = token
+
+        try app.test(.GET, "/protected/", beforeRequest: { req in
+            req.headers.bearerAuthorization = .init(token: tokenID)
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .unauthorized)
+        })
+    }
+
+    func testAccessingProtectedRouteWithOneInvalidScopeOneValidReturns401() async throws {
+        let tokenID = "new-token-ID-invalid-scope"
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: ["invalid", scope], expiryTime: Date().addingTimeInterval(3600))
+        fakeTokenManager.accessTokens[tokenID] = token
+
+        try app.test(.GET, "/protected/", beforeRequest: { req in
+            req.headers.bearerAuthorization = .init(token: tokenID)
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .unauthorized)
+        })
+    }
+
+    func testAccessingProtectedRouteWithLowercaseHeaderWorks() async throws {
+        let tokenID = "new-token-ID-invalid-scope"
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(3600))
+        fakeTokenManager.accessTokens[tokenID] = token
+
+        try app.test(.GET, "/protected/", beforeRequest: { req in
+            req.headers.bearerAuthorization = .init(token: tokenID)
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .ok)
+        })
+    }
+
+    func testThatAccessingProtectedRouteWithExpiredTokenReturns401() async throws {
+        let tokenID = "new-token-ID-invalid-scope"
+        let token = AccessToken(tokenString: tokenID, clientID: newClientID, userID: newUser.id, scopes: [scope, scope2], expiryTime: Date().addingTimeInterval(-3600))
+        fakeTokenManager.accessTokens[tokenID] = token
+
+        try app.test(.GET, "/protected/", beforeRequest: { req in
+            req.headers.bearerAuthorization = .init(token: tokenID)
+        }, afterResponse: { protectedResponse in
+            XCTAssertEqual(protectedResponse.status, .unauthorized)
+        })
+    }
+
 //    func testTokenIntrospectionEndpoint() async throws {
 //        var resourceConfig = Config([:])
 //        resourceConfig.environment = .test
@@ -375,21 +371,6 @@ class AuthCodeResourceServerTests: XCTestCase {
 //        let noScopeResponse = try resourceDrop.respond(to: noScopeRequest)
 //
 //        XCTAssertEqual(noScopeResponse.status, .unauthorized)
-//    }
-//
-//    func testErrorThrownIfTryingToInitialiseFromConfig() async throws {
-//        var errorThrown = false
-//        var errorDescription: String?
-//        let config = Config([:])
-//        do {
-//            try config.addProvider(VaporOAuth.Provider.self)
-//        } catch let error as OAuthProviderError {
-//            errorThrown = true
-//            errorDescription = error.description
-//        }
-//
-//        XCTAssertTrue(errorThrown)
-//        XCTAssertEqual("The OAuth Provider cannot be created with a Config and must be created manually", errorDescription)
 //    }
 
 }

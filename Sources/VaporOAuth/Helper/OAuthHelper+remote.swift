@@ -1,7 +1,5 @@
 import Vapor
 
-import Vapor
-
 extension OAuthHelper {
     public static func remote(
         tokenIntrospectionEndpoint: String,
@@ -84,7 +82,7 @@ extension OAuthHelper {
             let token: String
         }
         let tokenInfoResponse = try await client.post(
-            URI(stringLiteral: tokenIntrospectionEndpoint),
+            URI(string: tokenIntrospectionEndpoint),
             headers: headers,
             content: Token(token: token)
         ).get()

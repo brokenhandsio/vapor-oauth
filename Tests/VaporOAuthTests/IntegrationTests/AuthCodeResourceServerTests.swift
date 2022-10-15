@@ -17,6 +17,8 @@ class AuthCodeResourceServerTests: XCTestCase {
     let email = "han.solo@therebelalliance.com"
     var newUser: OAuthUser!
 
+    var resourceApp: Application!
+
     // MARK: - Overrides
 
     override func setUp() async throws {
@@ -66,7 +68,7 @@ class AuthCodeResourceServerTests: XCTestCase {
             .register(collection: resourceController)
 
         do {
-            _ = try app.testable()
+            _ = try app.testable(method: .running)
         } catch {
             app.shutdown()
             throw error
@@ -292,42 +294,82 @@ class AuthCodeResourceServerTests: XCTestCase {
         })
     }
 
-//    func testTokenIntrospectionEndpoint() async throws {
-//        var resourceConfig = Config([:])
-//        resourceConfig.environment = .test
-//        try resourceConfig.set("servers.default.port", "8081")
-//        let resourceDrop = try Droplet(resourceConfig)
-//        let remoteResourceController = RemoteResourceController(drop: resourceDrop)
-//        remoteResourceController.addRoutes()
+//    func testOneServerCanPingTheOther() async throws {
+// Doesn't work :-(
+//        resourceApp = Application(.testing)
+//        defer { resourceApp.shutdown() }
+//        resourceApp.http.server.configuration.port = 8081
 //
-//        var authConfig = try Config(arguments: ["vapor", "--env=test"])
+//        resourceApp.routes.get("help") { request in
+//            print("WAAAAAHHHH")
+//            return "Nagut"
+//        }
+//
+//        do {
+//            _ = try resourceApp.testable(method: .running(port: 8081))
+//        } catch {
+//            resourceApp.shutdown()
+//            throw error
+//        }
+//
+//        print("Sleeping")
+//        try await Task.sleep(nanoseconds: 4_000_000_000)
+//
+//        let response = try await app.client.get("http://127.0.0.1:8081/help")
+//
+//        XCTAssertEqual(response.status, .ok)
+//
+//        try app.test(.GET, "/oauth/token", afterResponse: {
+//            XCTAssertEqual($0.status, .notFound)
+//        })
+//
+//        try resourceApp.test(.GET, "help", afterResponse: {
+//            XCTAssertEqual($0.body.string, "Nagut")
+//        })
+//
+//
+//    }
+
+//    func testTokenIntrospectionEndpoint() async throws {
+//        resourceApp = Application(.testing)
+//        resourceApp.http.server.configuration.port = 8081
+//        let remoteResourceController = RemoteResourceController(client: resourceApp.client)
+//        try resourceApp.routes.register(collection: remoteResourceController)
+//
 //        let newClient = OAuthClient(clientID: newClientID, redirectURIs: [redirectURI], clientSecret: clientSecret, validScopes: [scope, scope2], confidential: true, firstParty: true, allowedGrantType: .authorization)
 //        let clientRetriever = StaticClientRetriever(clients: [newClient])
 //        let fakeUserManager = FakeUserManager()
 //        let resourceServerRetriever = FakeResourceServerRetriever()
-//        let oauthProvider = VaporOAuth.Provider(tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2], resourceServerRetriever: resourceServerRetriever)
-//        try authConfig.addProvider(oauthProvider)
-//        authConfig.addConfigurable(middleware: SessionsMiddleware.init, name: "sessions")
-//        try authConfig.set("droplet.middleware", ["error", "sessions"])
-//        let authDrop = try Droplet(authConfig)
-//        background {
-//            _ = try! authDrop.run()
-//        }
-//        authDrop.console.wait(seconds: 0.5)
+//        let oauthProvider = VaporOAuth.Provider(tokenManager: fakeTokenManager, clientRetriever: clientRetriever, authorizeHandler: capturingAuthouriseHandler, userManager: fakeUserManager, validScopes: [scope, scope2], resourceServerRetriever: resourceServerRetriever, authenticateUser: { $0.auth.login(self.newUser) })
 //
-//        let resourceServer = OAuthResourceServer(username: "testResource", password: "server".makeBytes())
+//        resourceApp.middleware.use(resourceApp.sessions.middleware)
+//        resourceApp.lifecycle.use(oauthProvider)
+//        resourceApp.oAuthHelper = .remote(
+//            tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info",
+//            client: resourceApp.client,
+//            resourceServerUsername: "testResource",
+//            resourceServerPassword: "server"
+//        )
+//
+//        do {
+//            _ = try resourceApp.testable()
+//        } catch {
+//            resourceApp.shutdown()
+//            throw error
+//        }
+//
+//        let resourceServer = OAuthResourceServer(username: "testResource", password: "server")
 //        resourceServerRetriever.resourceServers["testResource"] = resourceServer
 //
-//        let forbiddenRequest = Request(method: .get, uri: "/protected/")
-//        let forbiddenResponse = try resourceDrop.respond(to: forbiddenRequest)
+//        try resourceApp.test(.GET, "protected") { forbiddenResponse in
+//            XCTAssertEqual(forbiddenResponse.status, .forbidden)
+//        }
 //
-//        XCTAssertEqual(forbiddenResponse.status, .forbidden)
-//
-//        let unauthorizedRequest = Request(method: .get, uri: "/protected/")
-//        unauthorizedRequest.headers[.authorization] = "Bearer jfeiowjfeowi"
-//        let unauthorizedResponse = try resourceDrop.respond(to: unauthorizedRequest)
-//
-//        XCTAssertEqual(unauthorizedResponse.status, .unauthorized)
+//        try resourceApp.test(.GET, "protected", beforeRequest: { req in
+//            req.headers.bearerAuthorization = .init(token: "jfeiowjfeowi")
+//        }, afterResponse: { unauthorizedResponse in
+//            XCTAssertEqual(unauthorizedResponse.status, .unauthorized)
+//        })
 //
 //        let fakeTokenString = "123456789ABCDEFHGUIO"
 //        let accessToken = AccessToken(tokenString: fakeTokenString, clientID: newClientID, userID: userID, scopes: ["email", "user"], expiryTime: Date().addingTimeInterval(60))
@@ -371,7 +413,7 @@ class AuthCodeResourceServerTests: XCTestCase {
 //        let noScopeResponse = try resourceDrop.respond(to: noScopeRequest)
 //
 //        XCTAssertEqual(noScopeResponse.status, .unauthorized)
-//    }
+    }
 
 }
 
@@ -401,13 +443,7 @@ struct TestResourceController: RouteCollection {
 struct RemoteResourceController: RouteCollection {
     let client: Client
     func boot(routes: RoutesBuilder) throws {
-        let oauthMiddleware = OAuth2TokenIntrospectionMiddleware(
-            tokenIntrospectionEndpoint: "http://127.0.0.1:8080/oauth/token_info",
-            requiredScopes: ["user", "email"],
-            client: client,
-            resourceServerUsername: "testResource",
-            resourceServerPassword: "server"
-        )
+        let oauthMiddleware = OAuth2TokenIntrospectionMiddleware(requiredScopes: ["user", "email"])
         let protected = routes.grouped(oauthMiddleware)
 
         protected.get("protected", use: protectedHandler)

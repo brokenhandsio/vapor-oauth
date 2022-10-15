@@ -38,10 +38,6 @@ extension Request {
 }
 
 extension Request {
-//    static var oauthProvider: OAuth2Provider?
-}
-
-extension Request {
     func getOAuthToken() throws -> String {
         guard let authHeader = headers.first(name: .authorization) else {
             throw Abort(.forbidden)

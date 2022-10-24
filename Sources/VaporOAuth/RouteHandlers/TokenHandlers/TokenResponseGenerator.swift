@@ -26,7 +26,7 @@ struct TokenResponseGenerator {
             jsonDictionary[OAuthResponseParameters.scope] = scope
         }
 
-        var json = try JSONSerialization.data(withJSONObject: jsonDictionary)
+        let json = try JSONSerialization.data(withJSONObject: jsonDictionary)
         return try createResponseForToken(status: .ok, jsonData: json)
     }
 
@@ -34,6 +34,7 @@ struct TokenResponseGenerator {
         let response = Response(status: status)
 
         response.body = .init(data: jsonData)
+        response.headers.contentType = .json
 
         response.headers.replaceOrAdd(name: "pragma", value: "no-cache")
         response.headers.cacheControl = HTTPHeaders.CacheControl(noStore: true)

@@ -38,7 +38,7 @@ class TokenRefreshTests: XCTestCase {
             allowedGrantType: .authorization
         )
         fakeClientGetter.validClients[testClientID] = testClient
-        validRefreshToken = RefreshToken(
+        validRefreshToken = FakeRefreshToken(
             tokenString: refreshTokenString,
             clientID: testClientID,
             userID: nil,
@@ -313,7 +313,7 @@ class TokenRefreshTests: XCTestCase {
 
     func testErrorWhenRequestingScopeWithNoScopesOriginallyRequestedOnRefreshToken() async throws {
         let newRefreshToken = "NEW_REFRESH_TOKEN"
-        let refreshTokenWithoutScope = RefreshToken(tokenString: newRefreshToken, clientID: testClientID, userID: nil, scopes: nil)
+        let refreshTokenWithoutScope = FakeRefreshToken(tokenString: newRefreshToken, clientID: testClientID, userID: nil, scopes: nil)
         fakeTokenManager.refreshTokens[newRefreshToken] = refreshTokenWithoutScope
 
         let response = try await getTokenResponse(refreshToken: newRefreshToken, scope: scope1)
@@ -331,7 +331,7 @@ class TokenRefreshTests: XCTestCase {
         let userID = "abcdefg-123456"
         let accessToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         let userIDRefreshTokenString = "ASHFUIEWHFIHEWIUF"
-        let userIDRefreshToken = RefreshToken(tokenString: userIDRefreshTokenString, clientID: testClientID, userID: userID, scopes: [scope1, scope2])
+        let userIDRefreshToken = FakeRefreshToken(tokenString: userIDRefreshTokenString, clientID: testClientID, userID: userID, scopes: [scope1, scope2])
         fakeTokenManager.refreshTokens[userIDRefreshTokenString] = userIDRefreshToken
         fakeTokenManager.accessTokenToReturn = accessToken
         _ = try await getTokenResponse(refreshToken: userIDRefreshTokenString)
@@ -347,7 +347,7 @@ class TokenRefreshTests: XCTestCase {
     func testClientIDSetOnAccessTokenFromRefreshToken() async throws {
         let refreshTokenString = "some-new-refreshToken"
         let clientID = "the-client-id-to-set"
-        let refreshToken = RefreshToken(tokenString: refreshTokenString, clientID: clientID, userID: "some-user")
+        let refreshToken = FakeRefreshToken(tokenString: refreshTokenString, clientID: clientID, userID: "some-user")
         fakeTokenManager.refreshTokens[refreshTokenString] = refreshToken
         fakeClientGetter.validClients[clientID] = OAuthClient(clientID: clientID, redirectURIs: nil, clientSecret: testClientSecret, confidential: true, allowedGrantType: .authorization)
 

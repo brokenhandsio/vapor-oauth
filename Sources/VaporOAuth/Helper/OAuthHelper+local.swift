@@ -12,7 +12,7 @@ extension OAuthHelper {
                     throw Abort(.forbidden)
                 }
 
-                let accessToken = try getToken(tokenManager: tokenManager, request: request)
+                let accessToken = try await getToken(tokenManager: tokenManager, request: request)
 
                 guard tokenAuthenticator.validateAccessToken(accessToken, requiredScopes: scopes) else {
                     throw Abort(.unauthorized)
@@ -23,7 +23,7 @@ extension OAuthHelper {
                     throw Abort(.forbidden)
                 }
 
-                let token = try getToken(tokenManager: tokenManager, request: request)
+                let token = try await getToken(tokenManager: tokenManager, request: request)
 
                 guard let userID = token.userID else {
                     throw Abort(.unauthorized)
@@ -38,14 +38,14 @@ extension OAuthHelper {
         )
     }
 
-    private static func getToken(tokenManager: TokenManager?, request: Request) throws -> AccessToken {
+    private static func getToken(tokenManager: TokenManager?, request: Request) async throws -> AccessToken {
         guard let tokenManager = tokenManager else {
             throw Abort(.forbidden)
         }
 
         let token = try request.getOAuthToken()
 
-        guard let accessToken = tokenManager.getAccessToken(token) else {
+        guard let accessToken = try await tokenManager.getAccessToken(token) else {
             throw Abort(.unauthorized)
         }
 

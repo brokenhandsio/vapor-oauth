@@ -9,7 +9,7 @@ struct PasswordTokenHandler {
     let tokenManager: TokenManager
     let tokenResponseGenerator: TokenResponseGenerator
 
-    func handlePasswordTokenRequest(_ request: Request) throws -> Response {
+    func handlePasswordTokenRequest(_ request: Request) async throws -> Response {
         guard let username: String = request.content[OAuthRequestParameters.usernname] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'username' parameter")
@@ -60,7 +60,7 @@ struct PasswordTokenHandler {
         let expiryTime = 3600
         let scopes = scopeString?.components(separatedBy: " ")
 
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID,
+        let (access, refresh) = try await tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID,
                                                                              scopes: scopes,
                                                                              accessTokenExpiryTime: expiryTime)
 

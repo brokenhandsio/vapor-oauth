@@ -17,8 +17,12 @@ struct AuthorizeGetHandler {
         }
 
         do {
-            try clientValidator.validateClient(clientID: authRequestObject.clientID, responseType: authRequestObject.responseType,
-                                               redirectURI: authRequestObject.redirectURIString, scopes: authRequestObject.scopes)
+            try clientValidator.validateClient(
+                clientID: authRequestObject.clientID,
+                responseType: authRequestObject.responseType,
+                redirectURI: authRequestObject.redirectURIString,
+                scopes: authRequestObject.scopes
+            )
         } catch AuthorizationError.invalidClientID {
             return try await authorizeHandler.handleAuthorizationError(.invalidClientID)
         } catch AuthorizationError.invalidRedirectURI {

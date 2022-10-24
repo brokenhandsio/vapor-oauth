@@ -7,7 +7,7 @@ struct ClientCredentialsTokenHandler {
     let tokenManager: TokenManager
     let tokenResponseGenerator: TokenResponseGenerator
 
-    func handleClientCredentialsTokenRequest(_ request: Request) throws -> Response {
+    func handleClientCredentialsTokenRequest(_ request: Request) async throws -> Response {
         guard let clientID: String = request.content[OAuthRequestParameters.clientID] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'client_id' parameter")
@@ -44,7 +44,7 @@ struct ClientCredentialsTokenHandler {
 
         let expiryTime = 3600
         let scopes = scopeString?.components(separatedBy: " ")
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: nil,
+        let (access, refresh) = try await tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: nil,
                                                                              scopes: scopes,
                                                                              accessTokenExpiryTime: expiryTime)
 

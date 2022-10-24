@@ -27,7 +27,7 @@ struct TokenHandler {
                                                     tokenResponseGenerator: tokenResponseGenerator)
     }
 
-    func handleRequest(request: Request) throws -> Response {
+    func handleRequest(request: Request) async throws -> Response {
         guard let grantType: String = request.content[OAuthRequestParameters.grantType] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'grant_type' parameter")
@@ -35,13 +35,13 @@ struct TokenHandler {
 
         switch grantType {
         case OAuthFlowType.authorization.rawValue:
-            return try authCodeTokenHandler.handleAuthCodeTokenRequest(request)
+            return try await authCodeTokenHandler.handleAuthCodeTokenRequest(request)
         case OAuthFlowType.password.rawValue:
-            return try passwordTokenHandler.handlePasswordTokenRequest(request)
+            return try await passwordTokenHandler.handlePasswordTokenRequest(request)
         case OAuthFlowType.clientCredentials.rawValue:
-            return try clientCredentialsTokenHandler.handleClientCredentialsTokenRequest(request)
+            return try await clientCredentialsTokenHandler.handleClientCredentialsTokenRequest(request)
         case OAuthFlowType.refresh.rawValue:
-            return try refreshTokenHandler.handleRefreshTokenRequest(request)
+            return try await refreshTokenHandler.handleRefreshTokenRequest(request)
         default:
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.unsupportedGrant,
                                                              description: "This server does not support the '\(grantType)' grant type")

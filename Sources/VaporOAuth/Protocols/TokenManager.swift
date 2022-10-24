@@ -6,16 +6,16 @@ public protocol TokenManager {
         userID: String?,
         scopes: [String]?,
         accessTokenExpiryTime: Int
-    ) throws -> (AccessToken, RefreshToken)
+    ) async throws -> (AccessToken, RefreshToken)
 
     func generateAccessToken(
         clientID: String,
         userID: String?,
         scopes: [String]?,
         expiryTime: Int
-    ) throws -> AccessToken
-    
-    func getRefreshToken(_ refreshToken: String) -> RefreshToken?
-    func getAccessToken(_ accessToken: String) -> AccessToken?
-    func updateRefreshToken(_ refreshToken: RefreshToken, scopes: [String])
+    ) async throws -> AccessToken
+
+    func getRefreshToken(_ refreshToken: String) async throws -> RefreshToken?
+    func getAccessToken(_ accessToken: String) async throws -> AccessToken?
+    func updateRefreshToken(_ refreshToken: RefreshToken, scopes: [String]) async throws
 }

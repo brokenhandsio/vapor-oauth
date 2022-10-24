@@ -1,5 +1,7 @@
 public struct TokenAuthenticator {
 
+    public init() {}
+
     func validateRefreshToken(_ refreshToken: RefreshToken, clientID: String) -> Bool {
         guard refreshToken.clientID  == clientID else {
             return false

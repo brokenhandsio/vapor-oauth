@@ -8,9 +8,9 @@ struct RefreshTokenHandler {
     let tokenAuthenticator: TokenAuthenticator
     let tokenResponseGenerator: TokenResponseGenerator
 
-    func handleRefreshTokenRequest(_ request: Request) throws -> Response {
+    func handleRefreshTokenRequest(_ request: Request) async throws -> Response {
 
-        let (errorResponseReturned, refreshTokenRequestReturned) = try validateRefreshTokenRequest(request)
+        let (errorResponseReturned, refreshTokenRequestReturned) = try await validateRefreshTokenRequest(request)
 
         if let errorResponse = errorResponseReturned {
             return errorResponse
@@ -42,26 +42,25 @@ struct RefreshTokenHandler {
                                                                          description: "Request contained elevated scopes")
                     }
                 }
-            } else {
-                return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
-                                                                 description: "Request contained elevated scopes")
             }
 
-            tokenManager.updateRefreshToken(refreshTokenRequest.refreshToken, scopes: scopes)
+            try await tokenManager.updateRefreshToken(refreshTokenRequest.refreshToken, scopes: scopes)
         } else {
             scopesRequested = refreshTokenRequest.refreshToken.scopes
         }
 
         let expiryTime = 3600
-        let accessToken  = try tokenManager.generateAccessToken(clientID: refreshTokenRequest.clientID,
-                                                                userID: refreshTokenRequest.refreshToken.userID,
-                                                                scopes: scopesRequested, expiryTime: expiryTime)
+        let accessToken  = try await tokenManager.generateAccessToken(
+            clientID: refreshTokenRequest.clientID,
+            userID: refreshTokenRequest.refreshToken.userID,
+            scopes: scopesRequested, expiryTime: expiryTime
+        )
 
         return try tokenResponseGenerator.createResponse(accessToken: accessToken, refreshToken: nil,
                                                          expires: expiryTime, scope: scopesString)
     }
 
-    private func validateRefreshTokenRequest(_ request: Request) throws -> (Response?, RefreshTokenRequest?) {
+    private func validateRefreshTokenRequest(_ request: Request) async throws -> (Response?, RefreshTokenRequest?) {
         guard let clientID: String = request.content[OAuthRequestParameters.clientID] else {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                                           description: "Request was missing the 'client_id' parameter")
@@ -95,7 +94,7 @@ struct RefreshTokenHandler {
             return (errorResponse, nil)
         }
 
-        guard let refreshToken = tokenManager.getRefreshToken(refreshTokenString),
+        guard let refreshToken = try await tokenManager.getRefreshToken(refreshTokenString),
             tokenAuthenticator.validateRefreshToken(refreshToken, clientID: clientID) else {
                 let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
                                                                               description: "The refresh token is invalid")

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "VaporOAuth",
+    name: "vapor-oauth",
     platforms: [
         .macOS(.v12)
     ],

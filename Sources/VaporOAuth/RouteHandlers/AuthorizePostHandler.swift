@@ -36,15 +36,20 @@ struct AuthorizePostHandler {
 
         if requestObject.approveApplication {
             if requestObject.responseType == ResponseType.token {
-                let accessToken = try tokenManager.generateAccessToken(clientID: requestObject.clientID,
-                                                                       userID: requestObject.userID,
-                                                                       scopes: requestObject.scopes, expiryTime: 3600)
+                let accessToken = try await tokenManager.generateAccessToken(
+                    clientID: requestObject.clientID,
+                    userID: requestObject.userID,
+                    scopes: requestObject.scopes,
+                    expiryTime: 3600
+                )
                 redirectURI += "#token_type=bearer&access_token=\(accessToken.tokenString)&expires_in=3600"
             } else if requestObject.responseType == ResponseType.code {
-                let generatedCode = try codeManager.generateCode(userID: requestObject.userID,
-                                                                 clientID: requestObject.clientID,
-                                                                 redirectURI: requestObject.redirectURIBaseString,
-                                                                 scopes: requestObject.scopes)
+                let generatedCode = try await codeManager.generateCode(
+                    userID: requestObject.userID,
+                    clientID: requestObject.clientID,
+                    redirectURI: requestObject.redirectURIBaseString,
+                    scopes: requestObject.scopes
+                )
                 redirectURI += "?code=\(generatedCode)"
             } else {
                 redirectURI += "?error=invalid_request&error_description=unknown+response+type"

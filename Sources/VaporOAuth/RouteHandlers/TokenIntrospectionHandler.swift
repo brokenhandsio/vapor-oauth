@@ -20,7 +20,7 @@ struct TokenIntrospectionHandler {
                                            errorDescription: "The token parameter is required")
         }
 
-        guard let token = tokenManager.getAccessToken(tokenString) else {
+        guard let token = try await tokenManager.getAccessToken(tokenString) else {
             return try createTokenResponse(active: false, expiryDate: nil, clientID: nil)
         }
 

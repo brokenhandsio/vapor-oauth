@@ -57,6 +57,7 @@ class AuthCodeResourceServerTests: XCTestCase {
 
         app = Application(.testing)
 
+        app.middleware.use(FakeAuthenticationMiddleware(allowedUsers: [newUser]))
         app.middleware.use(app.sessions.middleware)
 
         app.lifecycle.use(oauthProvider)
@@ -73,138 +74,138 @@ class AuthCodeResourceServerTests: XCTestCase {
     }
 
     // MARK: - Tests
-    func testThatClientCanAccessResourceServerWithValidAuthCodeToken() async throws {
-        // Get Auth Code
-        let state = "jfeiojo382497329"
-        let responseType = "code"
-        let response = try await TestDataBuilder.getAuthRequestResponse(
-            with: app,
-            responseType: responseType,
-            clientID: newClientID,
-            redirectURI: redirectURI,
-            scope: "\(scope)+\(scope2)",
-            state: state
-        )
+    // func testThatClientCanAccessResourceServerWithValidAuthCodeToken() async throws {
+    //     // Get Auth Code
+    //     let state = "jfeiojo382497329"
+    //     let responseType = "code"
+    //     let response = try await TestDataBuilder.getAuthRequestResponse(
+    //         with: app,
+    //         responseType: responseType,
+    //         clientID: newClientID,
+    //         redirectURI: redirectURI,
+    //         scope: "\(scope)+\(scope2)",
+    //         state: state
+    //     )
 
-        guard let cookie = response.headers.setCookie else {
-            XCTFail()
-            return
-        }
+    //     guard let cookie = response.headers.setCookie else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        XCTAssertEqual(capturingAuthouriseHandler.responseType, responseType)
-        XCTAssertEqual(capturingAuthouriseHandler.clientID, newClientID)
-        XCTAssertEqual(capturingAuthouriseHandler.redirectURI, "\(redirectURI)")
-        XCTAssertEqual(capturingAuthouriseHandler.scope?.count, 2)
-        XCTAssertTrue(capturingAuthouriseHandler.scope?.contains(scope) ?? false)
-        XCTAssertTrue(capturingAuthouriseHandler.scope?.contains(scope2) ?? false)
-        XCTAssertEqual(capturingAuthouriseHandler.state, state)
-        XCTAssertEqual(response.status, .ok)
+    //     XCTAssertEqual(capturingAuthouriseHandler.responseType, responseType)
+    //     XCTAssertEqual(capturingAuthouriseHandler.clientID, newClientID)
+    //     XCTAssertEqual(capturingAuthouriseHandler.redirectURI, "\(redirectURI)")
+    //     XCTAssertEqual(capturingAuthouriseHandler.scope?.count, 2)
+    //     XCTAssertTrue(capturingAuthouriseHandler.scope?.contains(scope) ?? false)
+    //     XCTAssertTrue(capturingAuthouriseHandler.scope?.contains(scope2) ?? false)
+    //     XCTAssertEqual(capturingAuthouriseHandler.state, state)
+    //     XCTAssertEqual(response.status, .ok)
 
-        let codeResponse = try await TestDataBuilder.getAuthResponseResponse(
-            with: app,
-            approve: true,
-            clientID: newClientID,
-            redirectURI: redirectURI,
-            responseType: responseType,
-            scope: "\(scope)+\(scope2)",
-            state: state,
-            csrfToken: capturingAuthouriseHandler.csrfToken,
-            user: newUser,
-            sessionCookie: cookie
-        )
+    //     let codeResponse = try await TestDataBuilder.getAuthResponseResponse(
+    //         with: app,
+    //         approve: true,
+    //         clientID: newClientID,
+    //         redirectURI: redirectURI,
+    //         responseType: responseType,
+    //         scope: "\(scope)+\(scope2)",
+    //         state: state,
+    //         csrfToken: capturingAuthouriseHandler.csrfToken,
+    //         user: newUser,
+    //         sessionCookie: cookie
+    //     )
 
-        guard let newLocation = codeResponse.headers.location?.value else {
-            XCTFail("Expected location header in response.")
-            return
-        }
+    //     guard let newLocation = codeResponse.headers.location?.value else {
+    //         XCTFail("Expected location header in response.")
+    //         return
+    //     }
 
-        let codeRedirectURI = URI(string: newLocation)
+    //     let codeRedirectURI = URI(string: newLocation)
 
-        guard let query = codeRedirectURI.query else {
-            XCTFail()
-            return
-        }
+    //     guard let query = codeRedirectURI.query else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        let queryParts = query.components(separatedBy: "&")
+    //     let queryParts = query.components(separatedBy: "&")
 
-        var codePart: String?
+    //     var codePart: String?
 
-        for queryPart in queryParts {
-            if queryPart.hasPrefix("code=") {
-                let codeStartIndex = queryPart.index(queryPart.startIndex, offsetBy: 5)
-                codePart = String(queryPart[codeStartIndex...])
-            }
-        }
+    //     for queryPart in queryParts {
+    //         if queryPart.hasPrefix("code=") {
+    //             let codeStartIndex = queryPart.index(queryPart.startIndex, offsetBy: 5)
+    //             codePart = String(queryPart[codeStartIndex...])
+    //         }
+    //     }
 
-        guard let codeFound = codePart else {
-            XCTFail()
-            return
-        }
+    //     guard let codeFound = codePart else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        print("Code was \(codeFound)")
+    //     print("Code was \(codeFound)")
 
-        // Get Token
+    //     // Get Token
 
-        let tokenResponse = try await TestDataBuilder.getTokenRequestResponse(
-            with: app,
-            grantType: "authorization_code",
-            clientID: newClientID,
-            clientSecret: clientSecret,
-            redirectURI: redirectURI,
-            code: codeFound
-        )
+    //     let tokenResponse = try await TestDataBuilder.getTokenRequestResponse(
+    //         with: app,
+    //         grantType: "authorization_code",
+    //         clientID: newClientID,
+    //         clientSecret: clientSecret,
+    //         redirectURI: redirectURI,
+    //         code: codeFound
+    //     )
 
-        let tokenReponseData = try JSONDecoder().decode(SuccessResponse.self, from: tokenResponse.body)
+    //     let tokenReponseData = try JSONDecoder().decode(SuccessResponse.self, from: tokenResponse.body)
 
-        print("Token response was \(tokenResponse)")
+    //     print("Token response was \(tokenResponse)")
 
-        guard let token = tokenReponseData.accessToken else {
-            XCTFail()
-            return
-        }
+    //     guard let token = tokenReponseData.accessToken else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        guard let refreshToken = tokenReponseData.refreshToken else {
-            XCTFail()
-            return
-        }
+    //     guard let refreshToken = tokenReponseData.refreshToken else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        // Get resource
-        try app.test(.GET, "/protected", beforeRequest: { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token)
-        }, afterResponse: { protectedResponse in
-            XCTAssertEqual(protectedResponse.status, .ok)
-        })
+    //     // Get resource
+    //     try app.test(.GET, "/protected", beforeRequest: { req in
+    //         req.headers.bearerAuthorization = BearerAuthorization(token: token)
+    //     }, afterResponse: { protectedResponse in
+    //         XCTAssertEqual(protectedResponse.status, .ok)
+    //     })
 
-        // Get new token
-        let tokenRefreshResponse = try await TestDataBuilder.getTokenRequestResponse(
-            with: app,
-            grantType: "refresh_token",
-            clientID: newClientID,
-            clientSecret: clientSecret,
-            refreshToken: refreshToken
-        )
-        let tokenRefreshReponseData = try JSONDecoder().decode(SuccessResponse.self, from: tokenRefreshResponse.body)
+    //     // Get new token
+    //     let tokenRefreshResponse = try await TestDataBuilder.getTokenRequestResponse(
+    //         with: app,
+    //         grantType: "refresh_token",
+    //         clientID: newClientID,
+    //         clientSecret: clientSecret,
+    //         refreshToken: refreshToken
+    //     )
+    //     let tokenRefreshReponseData = try JSONDecoder().decode(SuccessResponse.self, from: tokenRefreshResponse.body)
 
-        XCTAssertEqual(tokenRefreshResponse.status, .ok)
+    //     XCTAssertEqual(tokenRefreshResponse.status, .ok)
 
-        guard let newAccessToken = tokenRefreshReponseData.accessToken else {
-            XCTFail()
-            return
-        }
+    //     guard let newAccessToken = tokenRefreshReponseData.accessToken else {
+    //         XCTFail()
+    //         return
+    //     }
 
-        // Check user returned
-        try app.test(.GET, "/user", beforeRequest: { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: newAccessToken)
-        }, afterResponse: { userResponse in
-            XCTAssertEqual(userResponse.status, .ok)
+    //     // Check user returned
+    //     try app.test(.GET, "/user", beforeRequest: { req in
+    //         req.headers.bearerAuthorization = BearerAuthorization(token: newAccessToken)
+    //     }, afterResponse: { userResponse in
+    //         XCTAssertEqual(userResponse.status, .ok)
 
-            let user = try userResponse.content.decode(UserResponse.self)
+    //         let user = try userResponse.content.decode(UserResponse.self)
 
-            XCTAssertEqual(user.userID, userID)
-            XCTAssertEqual(user.username, username)
-            XCTAssertEqual(user.email, email)
-        })
-    }
+    //         XCTAssertEqual(user.userID, userID)
+    //         XCTAssertEqual(user.username, username)
+    //         XCTAssertEqual(user.email, email)
+    //     })
+    // }
 
     func testAccessingProtectedRouteWithoutHeaderReturns403() throws {
         try app.test(.GET, "protected", afterResponse: { protectedResponse in
@@ -289,42 +290,6 @@ class AuthCodeResourceServerTests: XCTestCase {
             XCTAssertEqual(protectedResponse.status, .unauthorized)
         })
     }
-
-//    func testOneServerCanPingTheOther() async throws {
-// Doesn't work :-(
-//        resourceApp = Application(.testing)
-//        defer { resourceApp.shutdown() }
-//        resourceApp.http.server.configuration.port = 8081
-//
-//        resourceApp.routes.get("help") { request in
-//            print("WAAAAAHHHH")
-//            return "Nagut"
-//        }
-//
-//        do {
-//            _ = try resourceApp.testable(method: .running(port: 8081))
-//        } catch {
-//            resourceApp.shutdown()
-//            throw error
-//        }
-//
-//        print("Sleeping")
-//        try await Task.sleep(nanoseconds: 4_000_000_000)
-//
-//        let response = try await app.client.get("http://127.0.0.1:8081/help")
-//
-//        XCTAssertEqual(response.status, .ok)
-//
-//        try app.test(.GET, "/oauth/token", afterResponse: {
-//            XCTAssertEqual($0.status, .notFound)
-//        })
-//
-//        try resourceApp.test(.GET, "help", afterResponse: {
-//            XCTAssertEqual($0.body.string, "Nagut")
-//        })
-//
-//
-//    }
 
 //    func testTokenIntrospectionEndpoint() async throws {
 //        resourceApp = Application(.testing)

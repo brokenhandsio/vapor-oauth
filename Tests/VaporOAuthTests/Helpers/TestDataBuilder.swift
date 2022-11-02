@@ -13,7 +13,8 @@ class TestDataBuilder {
         resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
         environment: Environment = .testing,
         logger: CapturingLogger? = nil,
-        sessions: FakeSessions? = nil
+        sessions: FakeSessions? = nil,
+        registeredUsers: [OAuthUser] = []
     ) throws -> Application {
         let app = Application(environment)
 
@@ -21,17 +22,23 @@ class TestDataBuilder {
             app.sessions.use { _ in sessions }
         }
 
+        app.middleware.use(FakeAuthenticationMiddleware(allowedUsers: registeredUsers))
         app.middleware.use(app.sessions.middleware)
 
         app.lifecycle.use(
-            Provider(
+            OAuth2(
                 codeManager: codeManager,
                 tokenManager: tokenManager,
                 clientRetriever: clientRetriever,
                 authorizeHandler: authorizeHandler,
                 userManager: userManager,
                 validScopes: validScopes,
-                resourceServerRetriever: resourceServerRetriever
+                resourceServerRetriever: resourceServerRetriever,
+                oAuthHelper: .local(
+                    tokenAuthenticator: nil,
+                    userManager: nil,
+                    tokenManager: nil
+                )
             )
         )
 
@@ -161,6 +168,7 @@ class TestDataBuilder {
         scope: String?,
         state: String?,
         csrfToken: String?,
+        user: OAuthUser?,
         sessionCookie: HTTPCookies? = nil,
         sessionID: String? = nil
     ) async throws -> XCTHTTPResponse {
@@ -210,6 +218,13 @@ class TestDataBuilder {
                             request.headers.cookie = sessionCookie
                         }
                         try request.content.encode(requestBody, as: .urlEncodedForm)
+
+                        if let user = user {
+                            request.headers.basicAuthorization = .init(
+                                username: user.username,
+                                password: user.password
+                            )
+                        }
                     },
                     afterResponse: { response in
                         continuation.resume(returning: response)

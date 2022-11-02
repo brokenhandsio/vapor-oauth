@@ -41,13 +41,18 @@ class AuthCodeResourceServerTests: XCTestCase {
         newUser = OAuthUser(userID: userID, username: username, emailAddress: email, password: "leia")
         fakeUserManager.users.append(newUser)
 
-        let oauthProvider = Provider(
+        let oauthProvider = OAuth2(
             codeManager: fakeCodeManager,
             tokenManager: fakeTokenManager,
             clientRetriever: clientRetriever,
             authorizeHandler: capturingAuthouriseHandler,
             userManager: fakeUserManager,
-            validScopes: [scope, scope2]
+            validScopes: [scope, scope2],
+            oAuthHelper: .local(
+                tokenAuthenticator: TokenAuthenticator(),
+                userManager: fakeUserManager,
+                tokenManager: fakeTokenManager
+            )
         )
 
         app = Application(.testing)
@@ -55,11 +60,6 @@ class AuthCodeResourceServerTests: XCTestCase {
         app.middleware.use(app.sessions.middleware)
 
         app.lifecycle.use(oauthProvider)
-        app.oAuthHelper = .local(
-            tokenAuthenticator: TokenAuthenticator(),
-            userManager: fakeUserManager,
-            tokenManager: fakeTokenManager
-        )
 
         let resourceController = TestResourceController()
         try app.routes.register(collection: resourceController)
@@ -109,6 +109,7 @@ class AuthCodeResourceServerTests: XCTestCase {
             scope: "\(scope)+\(scope2)",
             state: state,
             csrfToken: capturingAuthouriseHandler.csrfToken,
+            user: newUser,
             sessionCookie: cookie
         )
 

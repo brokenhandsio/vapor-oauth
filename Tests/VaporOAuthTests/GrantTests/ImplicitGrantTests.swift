@@ -42,7 +42,8 @@ class ImplicitGrantTests: XCTestCase {
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
             validScopes: [scope1, scope2, scope3],
-            sessions: fakeSessions
+            sessions: fakeSessions,
+            registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
     }
 
@@ -245,7 +246,8 @@ class ImplicitGrantTests: XCTestCase {
         app = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
-            environment: .production
+            environment: .production,
+            registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
 
         let clientID = "ABCDE1234"
@@ -354,7 +356,8 @@ class ImplicitGrantTests: XCTestCase {
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
             validScopes: [scope1, scope2, scope3],
-            sessions: fakeSessions
+            sessions: fakeSessions,
+            registeredUsers: [user]
         )
 
         _ = try await getImplicitGrantResponse(user: user)
@@ -479,7 +482,18 @@ class ImplicitGrantTests: XCTestCase {
         csrfToken: String? = "the-csrf-token",
         sessionID: String? = "the-session-ID"
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthResponseResponse(with: app, approve: approve, clientID: clientID, redirectURI: redirectURI, responseType: responseType, scope: scope, state: state, csrfToken: csrfToken, sessionID: sessionID)
+        return try await TestDataBuilder.getAuthResponseResponse(
+            with: app,
+            approve: approve,
+            clientID: clientID,
+            redirectURI: redirectURI,
+            responseType: responseType,
+            scope: scope,
+            state: state,
+            csrfToken: csrfToken,
+            user: user,
+            sessionID: sessionID
+        )
     }
 
 }

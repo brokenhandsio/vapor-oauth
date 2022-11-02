@@ -12,7 +12,6 @@ class AuthorizationResponseTests: XCTestCase {
 
     static let clientID = "1234567890"
     static let redirectURI = "https://api.brokenhands.io/callback"
-    static let userID = "abdfeg-321313"
 
 //    let fakeSessions: FakeSessions!
     let scope1 = "email"
@@ -43,7 +42,8 @@ class AuthorizationResponseTests: XCTestCase {
             codeManager: fakeCodeManager,
             clientRetriever: fakeClientRetriever,
             authorizeHandler: capturingAuthoriseHandler,
-            sessions: fakeSessions
+            sessions: fakeSessions,
+            registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
     }
 
@@ -128,7 +128,8 @@ class AuthorizationResponseTests: XCTestCase {
         app = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientRetriever,
             authorizeHandler: capturingAuthoriseHandler,
-            environment: .production
+            environment: .production,
+            registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
 
         let clientID = "ABCDE1234"
@@ -162,9 +163,6 @@ class AuthorizationResponseTests: XCTestCase {
     }
 
     func testUserMustBeLoggedInToGetToken() async throws {
-        app.shutdown()
-
-        app = try TestDataBuilder.getOAuth2Application()
         let response = try await getAuthResponse(user: nil)
 
         XCTAssertEqual(response.status, .unauthorized)
@@ -316,6 +314,7 @@ class AuthorizationResponseTests: XCTestCase {
             scope: scope,
             state: state,
             csrfToken: csrfToken,
+            user: user,
             sessionID: sessionID
         )
     }

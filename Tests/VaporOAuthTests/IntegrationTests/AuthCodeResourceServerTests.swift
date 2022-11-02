@@ -47,15 +47,14 @@ class AuthCodeResourceServerTests: XCTestCase {
             clientRetriever: clientRetriever,
             authorizeHandler: capturingAuthouriseHandler,
             userManager: fakeUserManager,
-            validScopes: [scope, scope2],
-            authenticateUser: { req in req.auth.login(self.newUser) }
+            validScopes: [scope, scope2]
         )
 
         app = Application(.testing)
 
         app.middleware.use(app.sessions.middleware)
-        app.lifecycle.use(oauthProvider)
 
+        app.lifecycle.use(oauthProvider)
         app.oAuthHelper = .local(
             tokenAuthenticator: TokenAuthenticator(),
             userManager: fakeUserManager,
@@ -63,9 +62,7 @@ class AuthCodeResourceServerTests: XCTestCase {
         )
 
         let resourceController = TestResourceController()
-        try app.routes
-            .grouped(AuthorizePostMiddleware(authenticateUser: { $0.auth.login(self.newUser) }))
-            .register(collection: resourceController)
+        try app.routes.register(collection: resourceController)
 
         do {
             _ = try app.testable(method: .running)
@@ -77,7 +74,6 @@ class AuthCodeResourceServerTests: XCTestCase {
 
     // MARK: - Tests
     func testThatClientCanAccessResourceServerWithValidAuthCodeToken() async throws {
-
         // Get Auth Code
         let state = "jfeiojo382497329"
         let responseType = "code"
@@ -112,7 +108,6 @@ class AuthCodeResourceServerTests: XCTestCase {
             responseType: responseType,
             scope: "\(scope)+\(scope2)",
             state: state,
-            user: newUser,
             csrfToken: capturingAuthouriseHandler.csrfToken,
             sessionCookie: cookie
         )

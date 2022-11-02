@@ -164,7 +164,7 @@ class AuthorizationResponseTests: XCTestCase {
     func testUserMustBeLoggedInToGetToken() async throws {
         app.shutdown()
 
-        app = try TestDataBuilder.getOAuth2Application(authenticateUser: { _ in })
+        app = try TestDataBuilder.getOAuth2Application()
         let response = try await getAuthResponse(user: nil)
 
         XCTAssertEqual(response.status, .unauthorized)
@@ -315,7 +315,6 @@ class AuthorizationResponseTests: XCTestCase {
             responseType: responseType,
             scope: scope,
             state: state,
-            user: user,
             csrfToken: csrfToken,
             sessionID: sessionID
         )

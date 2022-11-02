@@ -354,7 +354,6 @@ class ImplicitGrantTests: XCTestCase {
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
             validScopes: [scope1, scope2, scope3],
-            authenticateUser: { $0.auth.login(user) },
             sessions: fakeSessions
         )
 
@@ -388,7 +387,6 @@ class ImplicitGrantTests: XCTestCase {
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
             validScopes: [scope1, scope2, scope3],
-            authenticateUser: { _ in },
             sessions: fakeSessions
         )
 
@@ -481,7 +479,7 @@ class ImplicitGrantTests: XCTestCase {
         csrfToken: String? = "the-csrf-token",
         sessionID: String? = "the-session-ID"
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthResponseResponse(with: app, approve: approve, clientID: clientID, redirectURI: redirectURI, responseType: responseType, scope: scope, state: state, user: user, csrfToken: csrfToken, sessionID: sessionID)
+        return try await TestDataBuilder.getAuthResponseResponse(with: app, approve: approve, clientID: clientID, redirectURI: redirectURI, responseType: responseType, scope: scope, state: state, csrfToken: csrfToken, sessionID: sessionID)
     }
 
 }

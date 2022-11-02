@@ -12,7 +12,6 @@ class TestDataBuilder {
         validScopes: [String]? = nil,
         resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
         environment: Environment = .testing,
-        authenticateUser: @escaping (Request) async throws -> Void = { req in req.auth.login(TestDataBuilder.anyOAuthUser()) },
         logger: CapturingLogger? = nil,
         sessions: FakeSessions? = nil
     ) throws -> Application {
@@ -32,8 +31,7 @@ class TestDataBuilder {
                 authorizeHandler: authorizeHandler,
                 userManager: userManager,
                 validScopes: validScopes,
-                resourceServerRetriever: resourceServerRetriever,
-                authenticateUser: authenticateUser
+                resourceServerRetriever: resourceServerRetriever
             )
         )
 
@@ -162,7 +160,6 @@ class TestDataBuilder {
         responseType: String?,
         scope: String?,
         state: String?,
-        user: OAuthUser?,
         csrfToken: String?,
         sessionCookie: HTTPCookies? = nil,
         sessionID: String? = nil
@@ -194,18 +191,11 @@ class TestDataBuilder {
         struct RequestBody: Encodable {
             var applicationAuthorized: Bool?
             var csrfToken: String?
-            var authAuthenticated: OAuthUser?
-
-            enum CodingKeys: String, CodingKey {
-                case applicationAuthorized, csrfToken
-                case authAuthenticated = "auth-authenticated"
-            }
         }
 
         var requestBody = RequestBody()
         requestBody.applicationAuthorized = approve
         requestBody.csrfToken = csrfToken
-        requestBody.authAuthenticated = user
 
         return try await withCheckedThrowingContinuation { continuation in
             do {

@@ -1,7 +1,5 @@
 import Vapor
 
-let oauthHelperKey = "oauth-helper"
-
 public struct OAuthHelper {
     public var assertScopes: ([String]?, Request) async throws -> Void
     public var user: (Request) async throws -> OAuthUser

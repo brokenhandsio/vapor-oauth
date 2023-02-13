@@ -1,12 +1,11 @@
-import Authentication
 import Vapor
 
 public final class OAuthResourceServer: Extendable {
     public let username: String
-    public let password: Bytes
-    public var extend: [String: Any] = [:]
+    public let password: String
+    public var extend: Vapor.Extend = .init()
 
-    public init(username: String, password: Bytes) {
+    public init(username: String, password: String) {
         self.username = username
         self.password = password
     }

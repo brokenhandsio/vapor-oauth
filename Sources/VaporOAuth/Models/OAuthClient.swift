@@ -1,4 +1,4 @@
-import Core
+import Vapor
 
 public final class OAuthClient: Extendable {
 
@@ -10,7 +10,7 @@ public final class OAuthClient: Extendable {
     public let firstParty: Bool
     public let allowedGrantType: OAuthFlowType
 
-    public var extend: [String: Any] = [:]
+    public var extend: Vapor.Extend = .init()
 
     public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
                 confidential: Bool? = nil, firstParty: Bool = false, allowedGrantType: OAuthFlowType) {

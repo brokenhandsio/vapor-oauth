@@ -1,27 +1,15 @@
 import Vapor
 
-public struct OAuth2TokenIntrospectionMiddleware: Middleware {
-
-    let tokenIntrospectionEndpoint: String
+public struct OAuth2TokenIntrospectionMiddleware: AsyncMiddleware {
     let requiredScopes: [String]?
-    let client: ClientFactoryProtocol
-    let resourceServerUsername: String
-    let resourceServerPassword: String
 
-    public init(tokenIntrospectionEndpoint: String, requiredScopes: [String]?, client: ClientFactoryProtocol,
-                resourceServerUsername: String, resourceServerPassword: String) {
-        self.tokenIntrospectionEndpoint = tokenIntrospectionEndpoint
+    public init(requiredScopes: [String]?) {
         self.requiredScopes = requiredScopes
-        self.client = client
-        self.resourceServerUsername = resourceServerUsername
-        self.resourceServerPassword = resourceServerPassword
     }
 
-    public func respond(to request: Request, chainingTo next: Responder) throws -> Response {
-        Helper.setup(for: request, tokenIntrospectionEndpoint: tokenIntrospectionEndpoint, client: client,
-                     resourceServerUsername: resourceServerUsername, resourceServerPassword: resourceServerPassword)
-        try request.oauth.assertScopes(requiredScopes)
+    public func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+        try await request.oAuthHelper.assertScopes(requiredScopes, request)
 
-        return try next.respond(to: request)
+        return try await next.respond(to: request)
     }
 }

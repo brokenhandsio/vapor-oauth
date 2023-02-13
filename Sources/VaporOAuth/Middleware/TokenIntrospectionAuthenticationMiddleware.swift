@@ -1,16 +1,15 @@
 import Vapor
 
-struct TokenIntrospectionAuthMiddleware: Middleware {
-
+struct TokenIntrospectionAuthMiddleware: AsyncMiddleware {
     let resourceServerAuthenticator: ResourceServerAuthenticator
 
-    func respond(to request: Request, chainingTo next: Responder) throws -> Response {
-        guard let password = request.auth.header?.basic else {
-            throw Abort.unauthorized
+    func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+        guard let basicAuthorization = request.headers.basicAuthorization else {
+            throw Abort(.unauthorized)
         }
 
-        try resourceServerAuthenticator.authenticate(credentials: password)
+        try resourceServerAuthenticator.authenticate(credentials: basicAuthorization)
 
-        return try next.respond(to: request)
+        return try await next.respond(to: request)
     }
 }

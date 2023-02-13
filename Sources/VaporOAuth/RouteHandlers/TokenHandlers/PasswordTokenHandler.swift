@@ -5,29 +5,29 @@ struct PasswordTokenHandler {
     let clientValidator: ClientValidator
     let scopeValidator: ScopeValidator
     let userManager: UserManager
-    let log: LogProtocol
+    let logger: Logger
     let tokenManager: TokenManager
     let tokenResponseGenerator: TokenResponseGenerator
 
-    func handlePasswordTokenRequest(_ request: Request) throws -> Response {
-        guard let username = request.data[OAuthRequestParameters.usernname]?.string else {
+    func handlePasswordTokenRequest(_ request: Request) async throws -> Response {
+        guard let username: String = request.content[OAuthRequestParameters.usernname] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'username' parameter")
         }
 
-        guard let password = request.data[OAuthRequestParameters.password]?.string else {
+        guard let password: String = request.content[OAuthRequestParameters.password] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'password' parameter")
         }
 
-        guard let clientID = request.data[OAuthRequestParameters.clientID]?.string else {
+        guard let clientID: String = request.content[OAuthRequestParameters.clientID] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'client_id' parameter")
         }
 
         do {
             try clientValidator.authenticateClient(clientID: clientID,
-                                                   clientSecret: request.data[OAuthRequestParameters.clientSecret]?.string,
+                                                   clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
                                                    grantType: .password)
         } catch ClientError.unauthorized {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
@@ -37,7 +37,7 @@ struct PasswordTokenHandler {
                                                              description: "Password Credentials grant is not allowed")
         }
 
-        let scopeString = request.data[OAuthRequestParameters.scope]?.string
+        let scopeString = request.content[String.self, at: OAuthRequestParameters.scope]
 
         if let scopes = scopeString {
             do {
@@ -52,7 +52,7 @@ struct PasswordTokenHandler {
         }
 
         guard let userID = userManager.authenticateUser(username: username, password: password) else {
-            log.warning("LOGIN WARNING: Invalid login attempt for user \(username)")
+            logger.warning("LOGIN WARNING: Invalid login attempt for user \(username)")
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
                                                              description: "Request had invalid credentials")
         }
@@ -60,7 +60,7 @@ struct PasswordTokenHandler {
         let expiryTime = 3600
         let scopes = scopeString?.components(separatedBy: " ")
 
-        let (access, refresh) = try tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID,
+        let (access, refresh) = try await tokenManager.generateAccessRefreshTokens(clientID: clientID, userID: userID,
                                                                              scopes: scopes,
                                                                              accessTokenExpiryTime: expiryTime)
 

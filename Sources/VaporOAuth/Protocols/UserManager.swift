@@ -1,6 +1,4 @@
-import Node
-
 public protocol UserManager {
-    func authenticateUser(username: String, password: String) -> Identifier?
-    func getUser(userID: Identifier) -> OAuthUser?
+    func authenticateUser(username: String, password: String) -> String?
+    func getUser(userID: String) -> OAuthUser?
 }

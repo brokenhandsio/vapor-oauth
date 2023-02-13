@@ -1,5 +1,4 @@
 import Vapor
-import HTTP
 
 struct TokenHandler {
 
@@ -11,7 +10,7 @@ struct TokenHandler {
     let passwordTokenHandler: PasswordTokenHandler
 
     init(clientValidator: ClientValidator, tokenManager: TokenManager, scopeValidator: ScopeValidator,
-         codeManager: CodeManager, userManager: UserManager, log: LogProtocol) {
+         codeManager: CodeManager, userManager: UserManager, logger: Logger) {
         tokenResponseGenerator = TokenResponseGenerator()
         refreshTokenHandler = RefreshTokenHandler(scopeValidator: scopeValidator, tokenManager: tokenManager,
                                                   clientValidator: clientValidator, tokenAuthenticator: tokenAuthenticator,
@@ -24,25 +23,25 @@ struct TokenHandler {
                                                     codeManager: codeManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
         passwordTokenHandler = PasswordTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
-                                                    userManager: userManager, log: log, tokenManager: tokenManager,
+                                                    userManager: userManager, logger: logger, tokenManager: tokenManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
     }
 
-    func handleRequest(request: Request) throws -> Response {
-        guard let grantType = request.data[OAuthRequestParameters.grantType]?.string else {
+    func handleRequest(request: Request) async throws -> Response {
+        guard let grantType: String = request.content[OAuthRequestParameters.grantType] else {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidRequest,
                                                              description: "Request was missing the 'grant_type' parameter")
         }
 
         switch grantType {
         case OAuthFlowType.authorization.rawValue:
-            return try authCodeTokenHandler.handleAuthCodeTokenRequest(request)
+            return try await authCodeTokenHandler.handleAuthCodeTokenRequest(request)
         case OAuthFlowType.password.rawValue:
-            return try passwordTokenHandler.handlePasswordTokenRequest(request)
+            return try await passwordTokenHandler.handlePasswordTokenRequest(request)
         case OAuthFlowType.clientCredentials.rawValue:
-            return try clientCredentialsTokenHandler.handleClientCredentialsTokenRequest(request)
+            return try await clientCredentialsTokenHandler.handleClientCredentialsTokenRequest(request)
         case OAuthFlowType.refresh.rawValue:
-            return try refreshTokenHandler.handleRefreshTokenRequest(request)
+            return try await refreshTokenHandler.handleRefreshTokenRequest(request)
         default:
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.unsupportedGrant,
                                                              description: "This server does not support the '\(grantType)' grant type")

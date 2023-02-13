@@ -1,10 +1,11 @@
-import HTTP
-import URI
+import Vapor
 
 public protocol AuthorizeHandler {
-    func handleAuthorizationRequest(_ request: Request,
-                                    authorizationRequestObject: AuthorizationRequestObject) throws -> ResponseRepresentable
-    func handleAuthorizationError(_ errorType: AuthorizationError) throws -> ResponseRepresentable
+    func handleAuthorizationRequest(
+        _ request: Request,
+        authorizationRequestObject: AuthorizationRequestObject
+    ) async throws -> Response
+    func handleAuthorizationError(_ errorType: AuthorizationError) async throws -> Response
 }
 
 public enum AuthorizationError: Error {

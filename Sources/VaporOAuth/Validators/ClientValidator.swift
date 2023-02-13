@@ -33,7 +33,7 @@ struct ClientValidator {
 
         try scopeValidator.validateScope(clientID: clientID, scopes: scopes)
 
-        let redirectURI = URIParser.shared.parse(bytes: redirectURI.makeBytes())
+        let redirectURI = URI(stringLiteral: redirectURI)
 
         if environment == .production {
             if redirectURI.scheme != "https" {

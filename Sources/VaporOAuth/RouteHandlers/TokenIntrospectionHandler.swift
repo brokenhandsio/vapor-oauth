@@ -1,22 +1,26 @@
-import HTTP
-import JSON
-import Foundation
+import Vapor
 
 struct TokenIntrospectionHandler {
-
     let clientValidator: ClientValidator
     let tokenManager: TokenManager
     let userManager: UserManager
 
-    func handleRequest(_ req: Request) throws -> ResponseRepresentable {
+    func handleRequest(_ req: Request) async throws -> Response {
 
-        guard let tokenString = req.data[OAuthRequestParameters.token]?.string else {
+        struct TokenData: Content {
+            let token: String
+        }
+
+        let tokenString: String
+        do {
+            tokenString = try req.content.decode(TokenData.self).token
+        } catch {
             return try createErrorResponse(status: .badRequest,
                                            errorMessage: OAuthResponseParameters.ErrorType.missingToken,
                                            errorDescription: "The token parameter is required")
         }
 
-        guard let token = tokenManager.getAccessToken(tokenString) else {
+        guard let token = try await tokenManager.getAccessToken(tokenString) else {
             return try createTokenResponse(active: false, expiryDate: nil, clientID: nil)
         }
 
@@ -39,40 +43,53 @@ struct TokenIntrospectionHandler {
 
     func createTokenResponse(active: Bool, expiryDate: Date?, clientID: String?, scopes: String? = nil,
                              user: OAuthUser? = nil) throws -> Response {
-        var json = JSON()
-        try json.set(OAuthResponseParameters.active, active)
-
-        if let clientID = clientID {
-            try json.set(OAuthResponseParameters.clientID, clientID)
-        }
-
-        if let scopes = scopes {
-            try json.set(OAuthResponseParameters.scope, scopes)
-        }
-
-        if let user = user {
-            try json.set(OAuthResponseParameters.userID, user.id)
-            try json.set(OAuthResponseParameters.username, user.username)
-            if let email = user.emailAddress {
-                try json.set(OAuthResponseParameters.email, email)
-            }
-        }
+        var tokenResponse = TokenResponse(
+            active: active,
+            scope: scopes,
+            clientID: clientID,
+            username: user?.username
+        )
 
         if let expiryDate = expiryDate {
-            try json.set(OAuthResponseParameters.expiry, Int(expiryDate.timeIntervalSince1970))
+            tokenResponse.exp = Int(expiryDate.timeIntervalSince1970)
         }
 
         let response = Response(status: .ok)
-        response.json = json
+        try response.content.encode(tokenResponse)
         return response
     }
 
-    func createErrorResponse(status: Status, errorMessage: String, errorDescription: String) throws -> Response {
-        var json = JSON()
-        try json.set(OAuthResponseParameters.error, errorMessage)
-        try json.set(OAuthResponseParameters.errorDescription, errorDescription)
+    func createErrorResponse(status: HTTPStatus, errorMessage: String, errorDescription: String) throws -> Response {
         let response = Response(status: status)
-        response.json = json
+        try response.content.encode(ErrorResponse(error: errorMessage, errorDescription: errorDescription))
         return response
+    }
+}
+
+extension TokenIntrospectionHandler {
+    struct ErrorResponse: Content {
+        var error: String
+        var errorDescription: String
+
+        enum CodingKeys: String, CodingKey {
+            case error
+            case errorDescription = "error_description"
+        }
+    }
+
+    struct TokenResponse: Content {
+        let active: Bool
+        var scope: String?
+        var clientID: String?
+        var username: String?
+        var exp: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case active
+            case scope
+            case clientID = "client_id"
+            case username
+            case exp
+        }
     }
 }

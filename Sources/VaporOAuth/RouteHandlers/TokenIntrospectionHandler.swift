@@ -32,7 +32,7 @@ struct TokenIntrospectionHandler {
         var user: OAuthUser? = nil
 
         if let userID = token.userID {
-            if let tokenUser = userManager.getUser(userID: userID) {
+            if let tokenUser = try await userManager.getUser(userID: userID) {
                 user = tokenUser
             }
         }

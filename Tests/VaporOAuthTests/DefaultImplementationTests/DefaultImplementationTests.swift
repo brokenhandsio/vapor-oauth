@@ -9,15 +9,17 @@ class DefaultImplementationTests: XCTestCase {
         XCTAssertNil(emptyResourceServerRetriever.getServer("some username"))
     }
 
-    func testThatEmptyUserManagerReturnsNilWhenAttemptingToAuthenticate() {
+    func testThatEmptyUserManagerReturnsNilWhenAttemptingToAuthenticate() async throws {
         let emptyUserManager = EmptyUserManager()
-        XCTAssertNil(emptyUserManager.authenticateUser(username: "username", password: "password"))
+        let token = try await emptyUserManager.authenticateUser(username: "username", password: "password")
+        XCTAssertNil(token)
     }
 
-    func testThatEmptyUserManagerReturnsNilWhenTryingToGetUser() {
+    func testThatEmptyUserManagerReturnsNilWhenTryingToGetUser() async throws {
         let emptyUserManager = EmptyUserManager()
         let id = "some-id"
-        XCTAssertNil(emptyUserManager.getUser(userID: id))
+        let user = try await emptyUserManager.getUser(userID: id)
+        XCTAssertNil(user)
     }
 
     func testThatEmptyAuthHandlerReturnsEmptyStringWhenHandlingAuthError() async throws {

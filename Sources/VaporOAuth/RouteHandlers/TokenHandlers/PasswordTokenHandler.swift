@@ -51,7 +51,7 @@ struct PasswordTokenHandler {
             }
         }
 
-        guard let userID = userManager.authenticateUser(username: username, password: password) else {
+        guard let userID = try await userManager.authenticateUser(username: username, password: password) else {
             logger.warning("LOGIN WARNING: Invalid login attempt for user \(username)")
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
                                                              description: "Request had invalid credentials")

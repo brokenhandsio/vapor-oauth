@@ -29,7 +29,7 @@ extension OAuthHelper {
                     throw Abort(.unauthorized)
                 }
 
-                guard let user = userManager.getUser(userID: userID) else {
+                guard let user = try await userManager.getUser(userID: userID) else {
                     throw Abort(.unauthorized)
                 }
 

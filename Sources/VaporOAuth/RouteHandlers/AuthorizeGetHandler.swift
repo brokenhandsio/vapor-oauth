@@ -17,7 +17,7 @@ struct AuthorizeGetHandler {
         }
 
         do {
-            try clientValidator.validateClient(
+            try await clientValidator.validateClient(
                 clientID: authRequestObject.clientID,
                 responseType: authRequestObject.responseType,
                 redirectURI: authRequestObject.redirectURIString,

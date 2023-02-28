@@ -26,7 +26,7 @@ struct PasswordTokenHandler {
         }
 
         do {
-            try clientValidator.authenticateClient(clientID: clientID,
+            try await clientValidator.authenticateClient(clientID: clientID,
                                                    clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
                                                    grantType: .password)
         } catch ClientError.unauthorized {
@@ -41,7 +41,7 @@ struct PasswordTokenHandler {
 
         if let scopes = scopeString {
             do {
-                try scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
+                try await scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
                 return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                                                  description: "Request contained an invalid scope")

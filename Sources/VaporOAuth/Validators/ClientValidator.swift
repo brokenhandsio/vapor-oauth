@@ -6,8 +6,8 @@ struct ClientValidator {
     let scopeValidator: ScopeValidator
     let environment: Environment
 
-    func validateClient(clientID: String, responseType: String, redirectURI: String, scopes: [String]?) throws {
-        guard let client = clientRetriever.getClient(clientID: clientID) else {
+    func validateClient(clientID: String, responseType: String, redirectURI: String, scopes: [String]?) async throws {
+        guard let client = try await clientRetriever.getClient(clientID: clientID) else {
             throw AuthorizationError.invalidClientID
         }
 
@@ -31,7 +31,7 @@ struct ClientValidator {
             }
         }
 
-        try scopeValidator.validateScope(clientID: clientID, scopes: scopes)
+        try await scopeValidator.validateScope(clientID: clientID, scopes: scopes)
 
         let redirectURI = URI(stringLiteral: redirectURI)
 
@@ -43,8 +43,8 @@ struct ClientValidator {
     }
 
     func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType?,
-                            checkConfidentialClient: Bool = false) throws {
-        guard let client = clientRetriever.getClient(clientID: clientID) else {
+                            checkConfidentialClient: Bool = false) async throws {
+        guard let client = try await clientRetriever.getClient(clientID: clientID) else {
             throw ClientError.unauthorized
         }
 

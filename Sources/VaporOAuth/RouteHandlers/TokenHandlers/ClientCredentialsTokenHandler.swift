@@ -19,7 +19,7 @@ struct ClientCredentialsTokenHandler {
         }
 
         do {
-            try clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
+            try await clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
                                                    grantType: .clientCredentials, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
@@ -32,7 +32,7 @@ struct ClientCredentialsTokenHandler {
         let scopeString = request.content[String.self, at: OAuthRequestParameters.scope]
         if let scopes = scopeString {
             do {
-                try scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
+                try await scopeValidator.validateScope(clientID: clientID, scopes: scopes.components(separatedBy: " "))
             } catch ScopeError.invalid {
                 return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                                                  description: "Request contained an invalid scope")

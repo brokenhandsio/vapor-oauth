@@ -26,7 +26,7 @@ struct RefreshTokenHandler {
         if let scopes = scopesRequested {
 
             do {
-                try scopeValidator.validateScope(clientID: refreshTokenRequest.clientID, scopes: scopes)
+                try await scopeValidator.validateScope(clientID: refreshTokenRequest.clientID, scopes: scopes)
             } catch ScopeError.invalid {
                 return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
                                                                  description: "Request contained an invalid scope")
@@ -74,7 +74,7 @@ struct RefreshTokenHandler {
         }
 
         do {
-            try clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
+            try await clientValidator.authenticateClient(clientID: clientID, clientSecret: clientSecret,
                                                    grantType: nil, checkConfidentialClient: true)
         } catch ClientError.unauthorized {
             let errorResponse = try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,

@@ -22,7 +22,7 @@ struct AuthorizePostHandler {
         var redirectURI = requestObject.redirectURIBaseString
 
         do {
-            try clientValidator.validateClient(clientID: requestObject.clientID, responseType: requestObject.responseType,
+            try await clientValidator.validateClient(clientID: requestObject.clientID, responseType: requestObject.responseType,
                                redirectURI: requestObject.redirectURIBaseString, scopes: requestObject.scopes)
         } catch is AbortError {
             throw Abort(.forbidden)

@@ -25,7 +25,7 @@ struct AuthCodeTokenHandler {
         }
 
         do {
-            try clientValidator.authenticateClient(clientID: clientID,
+            try await clientValidator.authenticateClient(clientID: clientID,
                                                    clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
                                                    grantType: .authorization)
         } catch {

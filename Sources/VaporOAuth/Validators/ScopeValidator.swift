@@ -2,7 +2,7 @@ struct ScopeValidator {
     let validScopes: [String]?
     let clientRetriever: ClientRetriever
 
-    func validateScope(clientID: String, scopes: [String]?) throws {
+    func validateScope(clientID: String, scopes: [String]?) async throws {
         if let requestedScopes = scopes {
             let providerScopes = validScopes ?? []
 
@@ -14,7 +14,7 @@ struct ScopeValidator {
                 }
             }
 
-            let client = clientRetriever.getClient(clientID: clientID)
+            let client = try await clientRetriever.getClient(clientID: clientID)
             if let clientScopes = client?.validScopes {
                 for scope in requestedScopes {
                     guard clientScopes.contains(scope) else {

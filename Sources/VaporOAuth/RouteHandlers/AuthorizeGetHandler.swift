@@ -1,5 +1,4 @@
 import Vapor
-import Crypto
 
 struct AuthorizeGetHandler {
     let authorizeHandler: AuthorizeHandler
@@ -50,14 +49,8 @@ struct AuthorizeGetHandler {
         }
 
         let redirectURI = URI(stringLiteral: authRequestObject.redirectURIString)
-        let numberOfBytes = 32
-        var bytes = [Int8](repeating: 0, count: 32)
-        let status = SecRandomCopyBytes(kSecRandomDefault, 32, &bytes)
 
-        guard status == errSecSuccess else {
-            throw Abort(.internalServerError)
-        }
-        let csrfToken = Data(bytes: bytes, count: numberOfBytes).hex
+        let csrfToken = [UInt8].random(count: 32).hex
 
         request.session.data[SessionData.csrfToken] = csrfToken
         let authorizationRequestObject = AuthorizationRequestObject(responseType: authRequestObject.responseType,

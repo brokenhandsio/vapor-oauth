@@ -6,7 +6,7 @@ on:
     tags:
       - '*'
   pull_request:
-    branches: *
+    branches: '*'
 
 jobs:
   ubuntu_test:

@@ -42,6 +42,9 @@ struct RefreshTokenHandler {
                                                                          description: "Request contained elevated scopes")
                     }
                 }
+            } else {
+                return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidScope,
+                                                                 description: "Request contained elevated scopes")
             }
 
             try await tokenManager.updateRefreshToken(refreshTokenRequest.refreshToken, scopes: scopes)

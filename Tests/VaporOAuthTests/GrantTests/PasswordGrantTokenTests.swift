@@ -57,6 +57,11 @@ class PasswordGrantTokenTests: XCTestCase {
         fakeTokenManager.refreshTokenToReturn = refreshToken
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
 
     func testCorrectErrorWhenGrantTypeNotSupplied() async throws {

@@ -47,6 +47,11 @@ class AuthorizationResponseTests: XCTestCase {
         )
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
 
     func testThatCorrectErrorCodeReturnedIfUserDoesNotAuthorizeApplication() async throws {

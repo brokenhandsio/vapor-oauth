@@ -3,10 +3,11 @@ import XCTVapor
 
 class DefaultImplementationTests: XCTestCase {
     // MARK: - Tests
-    func testThatEmptyResourceServerRetrieverReturnsNilWhenGettingResourceServer() {
+    func testThatEmptyResourceServerRetrieverReturnsNilWhenGettingResourceServer() async throws {
         let emptyResourceServerRetriever = EmptyResourceServerRetriever()
 
-        XCTAssertNil(emptyResourceServerRetriever.getServer("some username"))
+        let server = try await emptyResourceServerRetriever.getServer("some username")
+        XCTAssertNil(server)
     }
 
     func testThatEmptyUserManagerReturnsNilWhenAttemptingToAuthenticate() async throws {

@@ -73,6 +73,11 @@ class AuthCodeResourceServerTests: XCTestCase {
         }
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
     // func testThatClientCanAccessResourceServerWithValidAuthCodeToken() async throws {
     //     // Get Auth Code

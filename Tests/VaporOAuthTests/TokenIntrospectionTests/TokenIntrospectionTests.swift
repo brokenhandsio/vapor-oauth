@@ -42,6 +42,11 @@ class TokenIntrospectionTests: XCTestCase {
         fakeTokenManager.accessTokens[accessToken] = validToken
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
     func testCorrectErrorWhenTokenParameterNotSuppliedInRequest() async throws {
         let response = try await getInfoResponse(token: nil)

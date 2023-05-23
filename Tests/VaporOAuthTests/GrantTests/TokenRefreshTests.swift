@@ -47,6 +47,11 @@ class TokenRefreshTests: XCTestCase {
         fakeTokenManager.refreshTokens[refreshTokenString] = validRefreshToken
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
     func testCorrectErrorWhenGrantTypeNotSupplied() async throws {
         let response = try await getTokenResponse(grantType: nil)

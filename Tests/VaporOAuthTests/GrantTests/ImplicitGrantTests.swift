@@ -250,6 +250,8 @@ class ImplicitGrantTests: XCTestCase {
             registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
 
+        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+
         let clientID = "ABCDE1234"
         let redirectURI = "http://api.brokenhands.io/callback"
         let newClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .implicit)
@@ -360,6 +362,8 @@ class ImplicitGrantTests: XCTestCase {
             registeredUsers: [user]
         )
 
+        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+
         _ = try await getImplicitGrantResponse(user: user)
 
         guard let token = fakeTokenManager.getAccessToken(accessToken) else {
@@ -392,6 +396,8 @@ class ImplicitGrantTests: XCTestCase {
             validScopes: [scope1, scope2, scope3],
             sessions: fakeSessions
         )
+
+        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
 
         let response = try await getImplicitGrantResponse(user: nil)
 

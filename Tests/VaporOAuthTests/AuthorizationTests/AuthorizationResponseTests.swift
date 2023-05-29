@@ -6,6 +6,7 @@ class AuthorizationResponseTests: XCTestCase {
     // MARK: - Properties
 
     var app: Application!
+    var customApp: Application?
     var fakeClientRetriever: FakeClientGetter!
     var capturingAuthoriseHandler: CapturingAuthoriseHandler!
     var fakeCodeManager: FakeCodeManager!
@@ -49,6 +50,7 @@ class AuthorizationResponseTests: XCTestCase {
 
     override func tearDown() async throws {
         app.shutdown()
+        customApp?.shutdown()
         try await super.tearDown()
     }
 
@@ -128,9 +130,7 @@ class AuthorizationResponseTests: XCTestCase {
     }
 
     func testThatRedirectURIMustBeHTTPSForProduction() async throws {
-        app.shutdown()
-
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientRetriever,
             authorizeHandler: capturingAuthoriseHandler,
             environment: .production,
@@ -142,7 +142,7 @@ class AuthorizationResponseTests: XCTestCase {
         let newClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .authorization)
         fakeClientRetriever.validClients[clientID] = newClient
 
-        let response = try await getAuthResponse(clientID: clientID, redirectURI: redirectURI)
+        let response = try await getAuthResponse(clientID: clientID, redirectURI: redirectURI, on: customApp!)
 
         XCTAssertEqual(response.status, .badRequest)
     }
@@ -308,9 +308,11 @@ class AuthorizationResponseTests: XCTestCase {
         state: String? = nil,
         user: OAuthUser? = TestDataBuilder.anyOAuthUser(),
         csrfToken: String? = "the-csrf-token",
-        sessionID: String? = "the-session-ID"
+        sessionID: String? = "the-session-ID",
+        on customApp: Application? = nil
     ) async throws -> XCTHTTPResponse {
-        try await TestDataBuilder.getAuthResponseResponse(
+        let app: Application! = customApp ?? self.app
+        return try await TestDataBuilder.getAuthResponseResponse(
             with: app,
             approve: approve,
             clientID: clientID,

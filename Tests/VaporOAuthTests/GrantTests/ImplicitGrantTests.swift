@@ -4,6 +4,8 @@ import XCTVapor
 class ImplicitGrantTests: XCTestCase {
     // MARK: - Properties
     var app: Application!
+    // used for some, but not all tests
+    var customApp: Application?
     var fakeClientGetter: FakeClientGetter!
     var fakeTokenManager: FakeTokenManager!
     var capturingAuthHandler: CapturingAuthoriseHandler!
@@ -49,6 +51,7 @@ class ImplicitGrantTests: XCTestCase {
 
     override func tearDown() async throws {
         app.shutdown()
+        customApp?.shutdown()
         try await super.tearDown()
     }
 
@@ -242,8 +245,7 @@ class ImplicitGrantTests: XCTestCase {
     }
 
     func testThatRedirectURIMustBeHTTPSForProduction() async throws {
-        app.shutdown()
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
             environment: .production,
@@ -255,7 +257,7 @@ class ImplicitGrantTests: XCTestCase {
         let newClient = OAuthClient(clientID: clientID, redirectURIs: [redirectURI], allowedGrantType: .implicit)
         fakeClientGetter.validClients[clientID] = newClient
 
-        let response = try await getImplicitGrantResponse(clientID: clientID, redirectURI: redirectURI)
+        let response = try await getImplicitGrantResponse(clientID: clientID, redirectURI: redirectURI, on: customApp!)
 
         XCTAssertEqual(response.status, .badRequest)
     }
@@ -350,8 +352,7 @@ class ImplicitGrantTests: XCTestCase {
         fakeTokenManager.accessTokenToReturn = accessToken
         let user = OAuthUser(userID: userID, username: "luke", emailAddress: "luke@skywalker.com", password: "obiwan")
 
-        app.shutdown()
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             tokenManager: fakeTokenManager,
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
@@ -360,7 +361,7 @@ class ImplicitGrantTests: XCTestCase {
             registeredUsers: [user]
         )
 
-        _ = try await getImplicitGrantResponse(user: user)
+        _ = try await getImplicitGrantResponse(user: user, on: customApp!)
 
         guard let token = fakeTokenManager.getAccessToken(accessToken) else {
             XCTFail()
@@ -384,8 +385,7 @@ class ImplicitGrantTests: XCTestCase {
     }
 
     func testThatUserMustBeLoggedInWhenMakingImplicitTokenRequest() async throws {
-        app.shutdown()
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             tokenManager: fakeTokenManager,
             clientRetriever: fakeClientGetter,
             authorizeHandler: capturingAuthHandler,
@@ -393,7 +393,7 @@ class ImplicitGrantTests: XCTestCase {
             sessions: fakeSessions
         )
 
-        let response = try await getImplicitGrantResponse(user: nil)
+        let response = try await getImplicitGrantResponse(user: nil, on: customApp!)
 
         XCTAssertEqual(response.status, .unauthorized)
     }
@@ -466,9 +466,18 @@ class ImplicitGrantTests: XCTestCase {
         clientID: String? = "ABCDEF",
         redirectURI: String? = "https://api.brokenhands.io/callback",
         scope: String? = nil,
-        state: String? = nil
+        state: String? = nil,
+        on customApp: Application? = nil
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthRequestResponse(with: app, responseType: responseType, clientID: clientID, redirectURI: redirectURI, scope: scope, state: state)
+        let app: Application! = customApp ?? self.app
+        return try await TestDataBuilder.getAuthRequestResponse(
+            with: app,
+            responseType: responseType,
+            clientID: clientID,
+            redirectURI: redirectURI,
+            scope: scope,
+            state: state
+        )
     }
 
     private func getImplicitGrantResponse(
@@ -480,8 +489,10 @@ class ImplicitGrantTests: XCTestCase {
         state: String? = nil,
         user: OAuthUser? = TestDataBuilder.anyOAuthUser(),
         csrfToken: String? = "the-csrf-token",
-        sessionID: String? = "the-session-ID"
+        sessionID: String? = "the-session-ID",
+        on customApp: Application? = nil
     ) async throws -> XCTHTTPResponse {
+        let app: Application! = customApp ?? self.app
         return try await TestDataBuilder.getAuthResponseResponse(
             with: app,
             approve: approve,

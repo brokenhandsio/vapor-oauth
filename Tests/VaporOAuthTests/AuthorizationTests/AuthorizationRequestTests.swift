@@ -6,6 +6,8 @@ class AuthorizationRequestTests: XCTestCase {
     // MARK: - Properties
 
     var app: Application!
+    /// used for some but not all tests
+    var customApp: Application?
     var fakeClientRetriever: FakeClientGetter!
     var capturingAuthoriseHandler: CapturingAuthoriseHandler!
 
@@ -33,6 +35,7 @@ class AuthorizationRequestTests: XCTestCase {
 
     override func tearDown() async throws {
         app.shutdown()
+        customApp?.shutdown()
         try await super.tearDown()
     }
 
@@ -221,8 +224,7 @@ class AuthorizationRequestTests: XCTestCase {
     }
 
     func testThatUnknownScopeReturnsInvalidScopeError() async throws {
-        app.shutdown()
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientRetriever,
             authorizeHandler: capturingAuthoriseHandler,
             validScopes: ["email", "profile", "admin"]
@@ -232,7 +234,8 @@ class AuthorizationRequestTests: XCTestCase {
         let response = try await respondToOAuthRequest(
             clientID: clientID,
             redirectURI: redirectURI,
-            scope: invalidScope
+            scope: invalidScope,
+            on: customApp!
         )
 
         XCTAssertEqual(response.status, .seeOther)
@@ -292,8 +295,7 @@ class AuthorizationRequestTests: XCTestCase {
     }
 
     func testNonHTTPSRedirectURICanNotBeUsedWhenInProduction() async throws {
-        app.shutdown()
-        app = try TestDataBuilder.getOAuth2Application(
+        customApp = try TestDataBuilder.getOAuth2Application(
             clientRetriever: fakeClientRetriever,
             authorizeHandler: capturingAuthoriseHandler,
             environment: .production
@@ -307,7 +309,7 @@ class AuthorizationRequestTests: XCTestCase {
         )
         fakeClientRetriever.validClients[clientID] = httpClient
 
-        _ = try await respondToOAuthRequest(clientID: clientID, redirectURI: nonHTTPSRedirectURI)
+        _ = try await respondToOAuthRequest(clientID: clientID, redirectURI: nonHTTPSRedirectURI, on: customApp!)
 
         XCTAssertEqual(capturingAuthoriseHandler.authorizationError, .httpRedirectURI)
     }
@@ -370,9 +372,11 @@ class AuthorizationRequestTests: XCTestCase {
         clientID: String?,
         redirectURI: String?,
         scope: String? = nil,
-        state: String? = nil
+        state: String? = nil,
+        on customApp: Application? = nil
     ) async throws -> XCTHTTPResponse {
-        try await TestDataBuilder.getAuthRequestResponse(
+        let app: Application! = customApp ?? self.app
+        return try await TestDataBuilder.getAuthRequestResponse(
             with: app,
             responseType: responseType,
             clientID: clientID,

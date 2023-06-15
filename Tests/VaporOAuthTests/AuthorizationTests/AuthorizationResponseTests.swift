@@ -47,6 +47,11 @@ class AuthorizationResponseTests: XCTestCase {
         )
     }
 
+    override func tearDown() async throws {
+        app.shutdown()
+        try await super.tearDown()
+    }
+
     // MARK: - Tests
 
     func testThatCorrectErrorCodeReturnedIfUserDoesNotAuthorizeApplication() async throws {
@@ -131,6 +136,8 @@ class AuthorizationResponseTests: XCTestCase {
             environment: .production,
             registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
+
+        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
 
         let clientID = "ABCDE1234"
         let redirectURI = "http://api.brokenhands.io/callback"

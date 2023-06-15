@@ -3,10 +3,10 @@
     <br>
     <br>
     <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/Swift-4-brightgreen.svg" alt="Language">
+        <img src="http://img.shields.io/badge/Swift-5.7-brightgreen.svg" alt="Language">
     </a>
-    <a href="https://travis-ci.org/brokenhandsio/vapor-oauth">
-        <img src="https://travis-ci.org/brokenhandsio/vapor-oauth.svg?branch=master" alt="Build Status">
+    <a href="https://github.com/brokenhandsio/vapor-oauth/actions/workflows/main.yml">
+        <img src="https://github.com/brokenhandsio/vapor-oauth/actions/workflows/main.yml/badge.svg" alt="Test Status">
     </a>
     <a href="https://codecov.io/gh/brokenhandsio/vapor-oauth">
         <img src="https://codecov.io/gh/brokenhandsio/vapor-oauth/branch/master/graph/badge.svg" alt="Code Coverage">

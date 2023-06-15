@@ -8,7 +8,7 @@ struct TokenIntrospectionAuthMiddleware: AsyncMiddleware {
             throw Abort(.unauthorized)
         }
 
-        try resourceServerAuthenticator.authenticate(credentials: basicAuthorization)
+        try await resourceServerAuthenticator.authenticate(credentials: basicAuthorization)
 
         return try await next.respond(to: request)
     }

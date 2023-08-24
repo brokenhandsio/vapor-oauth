@@ -40,6 +40,7 @@ struct OAuthResponseParameters {
         static let unsupportedGrant = "unsupported_grant_type"
         static let invalidGrant = "invalid_grant"
         static let missingToken = "missing_token"
+        static let expiredToken = "expired_token"
     }
 }
 

@@ -11,6 +11,7 @@ struct DeviceCodeTokenHandler {
 
     let clientValidator: ClientValidator
     let scopeValidator: ScopeValidator
+    let codeManager: CodeManager
     let tokenManager: TokenManager
     let tokenResponseGenerator: TokenResponseGenerator
 
@@ -33,9 +34,16 @@ struct DeviceCodeTokenHandler {
                                                              description: "Request had invalid client credentials", status: .unauthorized)
         }
 
-        guard let deviceCode = try await tokenManager.getDeviceCode(deviceCodeString) else {
+        guard let deviceCode = try await codeManager.getDeviceCode(deviceCodeString) else {
             let errorDescription = "The device code provided was invalid or expired"
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
+                                                             description: errorDescription)
+        }
+
+        // Check if the device code is expired
+        if deviceCode.expiryDate < Date() {
+            let errorDescription = "Device code has expired"
+            return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.expiredToken,
                                                              description: errorDescription)
         }
 
@@ -48,7 +56,7 @@ struct DeviceCodeTokenHandler {
             }
         }
 
-        try await tokenManager.deviceCodeUsed(deviceCode)
+        try await codeManager.deviceCodeUsed(deviceCode)
 
         let expiryTime = 3600
 

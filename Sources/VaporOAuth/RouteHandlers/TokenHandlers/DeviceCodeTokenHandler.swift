@@ -40,10 +40,9 @@ struct DeviceCodeTokenHandler {
                                                              description: errorDescription)
         }
 
-        // Check if the device code is expired
         if deviceCode.expiryDate < Date() {
-            let errorDescription = "Device code has expired"
-            return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.expiredToken,
+            let errorDescription = "The device code provided was invalid or expired"
+            return try tokenResponseGenerator.createResponse(error: "expired_token",
                                                              description: errorDescription)
         }
 

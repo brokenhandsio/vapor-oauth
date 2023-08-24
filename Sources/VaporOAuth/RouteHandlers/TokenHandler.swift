@@ -26,7 +26,7 @@ struct TokenHandler {
         passwordTokenHandler = PasswordTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
                                                     userManager: userManager, logger: logger, tokenManager: tokenManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
-        deviceCodeTokenHandler = DeviceCodeTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
+        deviceCodeTokenHandler = DeviceCodeTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator, codeManager: codeManager,
                                                         tokenManager: tokenManager,
                                                         tokenResponseGenerator: tokenResponseGenerator)
     }

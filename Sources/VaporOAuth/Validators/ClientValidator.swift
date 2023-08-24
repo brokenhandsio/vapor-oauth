@@ -62,6 +62,10 @@ struct ClientValidator {
                     throw ClientError.notFirstParty
                 }
             }
+            
+            if grantType == .deviceCode {
+                
+            }
         }
 
         if checkConfidentialClient {

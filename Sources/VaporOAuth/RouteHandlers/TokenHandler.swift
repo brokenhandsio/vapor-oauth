@@ -26,7 +26,8 @@ struct TokenHandler {
         passwordTokenHandler = PasswordTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
                                                     userManager: userManager, logger: logger, tokenManager: tokenManager,
                                                     tokenResponseGenerator: tokenResponseGenerator)
-        deviceCodeTokenHandler = DeviceCodeTokenHandler(clientValidator: clientValidator, tokenManager: tokenManager,
+        deviceCodeTokenHandler = DeviceCodeTokenHandler(clientValidator: clientValidator, scopeValidator: scopeValidator,
+                                                        tokenManager: tokenManager,
                                                         tokenResponseGenerator: tokenResponseGenerator)
     }
 
@@ -46,7 +47,7 @@ struct TokenHandler {
         case OAuthFlowType.refresh.rawValue:
             return try await refreshTokenHandler.handleRefreshTokenRequest(request)
         case OAuthFlowType.deviceCode.rawValue:
-                return try await deviceCodeTokenHandler.handleDeviceCodeTokenRequest(request)
+            return try await deviceCodeTokenHandler.handleDeviceCodeTokenRequest(request)
         default:
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.unsupportedGrant,
                                                              description: "This server does not support the '\(grantType)' grant type")

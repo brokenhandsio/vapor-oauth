@@ -62,7 +62,8 @@ class TestDataBuilder {
         scope: String? = nil,
         username: String? = nil,
         password: String? = nil,
-        refreshToken: String? = nil
+        refreshToken: String? = nil,
+        deviceCode: String? = nil
     ) async throws -> XCTHTTPResponse {
         struct RequestData: Content {
             var grantType: String?
@@ -74,7 +75,8 @@ class TestDataBuilder {
             var username: String?
             var password: String?
             var refreshToken: String?
-
+            var deviceCode: String?
+            
             enum CodingKeys: String, CodingKey {
                 case username, password, scope, code
                 case grantType = "grant_type"
@@ -82,6 +84,7 @@ class TestDataBuilder {
                 case clientSecret = "client_secret"
                 case redirectURI = "redirect_uri"
                 case refreshToken = "refresh_token"
+                case deviceCode = "device_code"
             }
         }
 
@@ -94,7 +97,8 @@ class TestDataBuilder {
             scope: scope,
             username: username,
             password: password,
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            deviceCode: deviceCode
         )
 
         return try await withCheckedThrowingContinuation { continuation in

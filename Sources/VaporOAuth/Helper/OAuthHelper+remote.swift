@@ -1,5 +1,25 @@
 import Vapor
 
+
+actor RemoteTokenResponseActor {
+    var remoteTokenResponse: RemoteTokenResponse?
+
+    func setRemoteTokenResponse(_ response: RemoteTokenResponse) {
+        self.remoteTokenResponse = response
+    }
+
+    func hasTokenResponse() async -> Bool {
+        return remoteTokenResponse != nil
+    }
+
+    func getRemoteTokenResponse() async throws -> RemoteTokenResponse {
+        guard let response = remoteTokenResponse else {
+            throw Abort(.internalServerError)
+        }
+        return response
+    }
+}
+
 extension OAuthHelper {
     public static func remote(
         tokenIntrospectionEndpoint: String,
@@ -7,29 +27,27 @@ extension OAuthHelper {
         resourceServerUsername: String,
         resourceServerPassword: String
     ) -> Self {
-        var remoteTokenResponse: RemoteTokenResponse?
+        let responseActor = RemoteTokenResponseActor()
         return OAuthHelper(
             assertScopes: { scopes, request in
-                if remoteTokenResponse == nil {
+                if !(await responseActor.hasTokenResponse()) {
                     try await setupRemoteTokenResponse(
                         request: request,
                         tokenIntrospectionEndpoint: tokenIntrospectionEndpoint,
                         client: client,
                         resourceServerUsername: resourceServerUsername,
                         resourceServerPassword: resourceServerPassword,
-                        remoteTokenResponse: &remoteTokenResponse
+                        responseActor: responseActor
                     )
                 }
-
-                guard let remoteTokenResponse = remoteTokenResponse else {
-                    throw Abort(.internalServerError)
-                }
-
+                
+                let remoteTokenResponse = try await responseActor.getRemoteTokenResponse()
+                
                 if let requiredScopes = scopes {
                     guard let tokenScopes = remoteTokenResponse.scopes else {
                         throw Abort(.unauthorized)
                     }
-
+                    
                     for scope in requiredScopes {
                         if !tokenScopes.contains(scope) {
                             throw Abort(.unauthorized)
@@ -37,26 +55,25 @@ extension OAuthHelper {
                     }
                 }
             },
+            
             user: { request in
-                if remoteTokenResponse == nil {
+                if !(await responseActor.hasTokenResponse()) {
                     try await setupRemoteTokenResponse(
                         request: request,
                         tokenIntrospectionEndpoint: tokenIntrospectionEndpoint,
                         client: client,
                         resourceServerUsername: resourceServerUsername,
                         resourceServerPassword: resourceServerPassword,
-                        remoteTokenResponse: &remoteTokenResponse
+                        responseActor: responseActor
                     )
                 }
 
-                guard let remoteTokenResponse = remoteTokenResponse else {
-                    throw Abort(.internalServerError)
-                }
-
+                let remoteTokenResponse = try await responseActor.getRemoteTokenResponse()
+                
                 guard let user = remoteTokenResponse.user else {
                     throw Abort(.unauthorized)
                 }
-
+                
                 return user
             }
         )
@@ -68,16 +85,16 @@ extension OAuthHelper {
         client: Client,
         resourceServerUsername: String,
         resourceServerPassword: String,
-        remoteTokenResponse: inout RemoteTokenResponse?
+        responseActor: RemoteTokenResponseActor
     ) async throws {
         let token = try request.getOAuthToken()
-
+        
         var headers = HTTPHeaders()
         headers.basicAuthorization = .init(
             username: resourceServerUsername,
             password: resourceServerPassword
         )
-
+        
         struct Token: Content {
             let token: String
         }
@@ -86,20 +103,20 @@ extension OAuthHelper {
             headers: headers,
             content: Token(token: token)
         ).get()
-
+        
         let tokenInfoJSON = tokenInfoResponse.content
-
+        
         guard let tokenActive: Bool = tokenInfoJSON[OAuthResponseParameters.active], tokenActive else {
             throw Abort(.unauthorized)
         }
-
+        
         var scopes: [String]?
         var oauthUser: OAuthUser?
-
+        
         if let tokenScopes: String = tokenInfoJSON[OAuthResponseParameters.scope] {
             scopes = tokenScopes.components(separatedBy: " ")
         }
-
+        
         if let userID: String = tokenInfoJSON[OAuthResponseParameters.userID] {
             guard let username: String = tokenInfoJSON[OAuthResponseParameters.username] else {
                 throw Abort(.internalServerError)
@@ -108,9 +125,10 @@ extension OAuthHelper {
                                   emailAddress: tokenInfoJSON[String.self, at: OAuthResponseParameters.email],
                                   password: "")
         }
-
-        remoteTokenResponse = RemoteTokenResponse(scopes: scopes, user: oauthUser)
-
+        
+        // Update the remoteTokenResponse property of the actor
+        let remoteTokenResponse = RemoteTokenResponse(scopes: scopes, user: oauthUser)
+        await responseActor.setRemoteTokenResponse(remoteTokenResponse)
     }
 }
 

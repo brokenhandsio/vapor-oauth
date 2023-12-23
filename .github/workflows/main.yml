@@ -12,7 +12,7 @@ jobs:
   ubuntu_test:
     name: Ubuntu Build & Test
     runs-on: ubuntu-22.04
-    container: swift:5.7.3-jammy
+    container: swift:5.9.2-jammy
     steps:
     - uses: actions/checkout@v3
     - name: Build
@@ -22,8 +22,8 @@ jobs:
   macos_test:
     name: macOS Build & Test
     env:
-      DEVELOPER_DIR: /Applications/Xcode_14.2.app/Contents/Developer
-    runs-on: macos-12
+      DEVELOPER_DIR: /Applications/Xcode_15.1.app/Contents/Developer
+    runs-on: macos-13
     steps:
     - uses: actions/checkout@v3
     - name: Build

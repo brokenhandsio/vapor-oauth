@@ -24,20 +24,23 @@ struct AuthCodeTokenHandler {
                                                              description: "Request was missing the 'client_id' parameter")
         }
 
+        // Include code_verifier parameter for PKCE
+        let codeVerifier: String? = request.content[OAuthRequestParameters.codeVerifier]
+
         do {
             try await clientValidator.authenticateClient(clientID: clientID,
-                                                   clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
-                                                   grantType: .authorization)
+                                                         clientSecret: request.content[String.self, at: OAuthRequestParameters.clientSecret],
+                                                         grantType: .authorization)
         } catch {
             return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidClient,
                                                              description: "Request had invalid client credentials", status: .unauthorized)
         }
-
+        
         guard let code = try await codeManager.getCode(codeString),
-            codeValidator.validateCode(code, clientID: clientID, redirectURI: redirectURI) else {
-                let errorDescription = "The code provided was invalid or expired, or the redirect URI did not match"
-                return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
-                                                                 description: errorDescription)
+              codeValidator.validateCode(code, clientID: clientID, redirectURI: redirectURI, codeVerifier: codeVerifier) else {
+            let errorDescription = "The code provided was invalid or expired, or the redirect URI did not match"
+            return try tokenResponseGenerator.createResponse(error: OAuthResponseParameters.ErrorType.invalidGrant,
+                                                             description: errorDescription)
         }
 
         try await codeManager.codeUsed(code)
@@ -52,6 +55,6 @@ struct AuthCodeTokenHandler {
         )
 
         return try tokenResponseGenerator.createResponse(accessToken: access, refreshToken: refresh, expires: Int(expiryTime),
-                                  scope: scopes?.joined(separator: " "))
+                                                         scope: scopes?.joined(separator: " "))
     }
 }

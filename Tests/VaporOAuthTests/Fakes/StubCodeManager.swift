@@ -4,7 +4,15 @@ class StubCodeManager: CodeManager {
     
     var codeToReturn = "ABCDEFHIJKLMNO"
     
-    func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
+    // Updated to include PKCE parameters
+    func generateCode(
+        userID: String,
+        clientID: String,
+        redirectURI: String,
+        scopes: [String]?,
+        codeChallenge: String?,
+        codeChallengeMethod: String?
+    ) async throws -> String {
         return codeToReturn
     }
     

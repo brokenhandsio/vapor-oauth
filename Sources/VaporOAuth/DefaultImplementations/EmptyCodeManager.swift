@@ -5,12 +5,15 @@ public struct EmptyCodeManager: CodeManager {
         return nil
     }
 
+    // Updated to include PKCE parameters
     public func generateCode(
         userID: String,
         clientID: String,
         redirectURI: String,
-        scopes: [String]?
-    ) throws -> String {
+        scopes: [String]?,
+        codeChallenge: String?,
+        codeChallengeMethod: String?
+    ) async throws -> String {
         return ""
     }
 
@@ -20,7 +23,7 @@ public struct EmptyCodeManager: CodeManager {
         return nil
     }
 
-    public func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) throws -> String {
+    public func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) async throws -> String {
         return ""
     }
 

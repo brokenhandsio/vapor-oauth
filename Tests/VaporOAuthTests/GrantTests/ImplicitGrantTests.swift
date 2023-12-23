@@ -472,9 +472,11 @@ class ImplicitGrantTests: XCTestCase {
         clientID: String? = "ABCDEF",
         redirectURI: String? = "https://api.brokenhands.io/callback",
         scope: String? = nil,
-        state: String? = nil
+        state: String? = nil,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthRequestResponse(with: app, responseType: responseType, clientID: clientID, redirectURI: redirectURI, scope: scope, state: state)
+        return try await TestDataBuilder.getAuthRequestResponse(with: app, responseType: responseType, clientID: clientID, redirectURI: redirectURI, scope: scope, state: state, codeChallenge: codeChallenge, codeChallengeMethod: codeChallengeMethod)
     }
 
     private func getImplicitGrantResponse(

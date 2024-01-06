@@ -13,7 +13,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.89.3"),
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.90.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.1.0"),
         .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.13.1")
     ],

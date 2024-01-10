@@ -53,7 +53,8 @@ struct AuthorizePostHandler {
                     redirectURI: requestObject.redirectURIBaseString,
                     scopes: requestObject.scopes,
                     codeChallenge: requestObject.codeChallenge,
-                    codeChallengeMethod: requestObject.codeChallengeMethod
+                    codeChallengeMethod: requestObject.codeChallengeMethod,
+                    nonce: requestObject.nonce
                 )
                 redirectURI += "?code=\(generatedCode)"
             } else if requestObject.responseType == ResponseType.idToken || requestObject.responseType ==  ResponseType.tokenAndIdToken {

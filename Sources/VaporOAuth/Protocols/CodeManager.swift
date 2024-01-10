@@ -8,9 +8,10 @@ public protocol CodeManager: Sendable {
     ///   - scopes: The requested scopes.
     ///   - codeChallenge: The code challenge.
     ///   - codeChallengeMethod: The code challenge method.
+    ///   - nonce: The nonce.
     /// - Returns: The generated OAuth code.
     /// - Throws: An error if the code generation fails.
-    func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?, codeChallenge: String?, codeChallengeMethod: String?) async throws -> String
+    func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?, codeChallenge: String?, codeChallengeMethod: String?, nonce: String?) async throws -> String
     
     /// Retrieves the OAuth code associated with the specified code.
     /// - Parameter code: The OAuth code.

@@ -73,7 +73,8 @@ class DefaultImplementationTests: XCTestCase {
             redirectURI: "https://api.brokenhands.io/callback",
             scopes: nil,
             codeChallenge: "dummyChallenge",
-            codeChallengeMethod: "S256"
+            codeChallengeMethod: "S256",
+            nonce: "nonce"
         )
         
         // Perform the assertion

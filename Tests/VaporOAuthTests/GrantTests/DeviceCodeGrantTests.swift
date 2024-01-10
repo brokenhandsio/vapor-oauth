@@ -1,10 +1,3 @@
-//
-//  DeviceCodeGrantTests.swift
-//
-//
-//  Created by Vamsi Madduluri on 24/08/23.
-//
-
 import XCTVapor
 @testable import VaporOAuth
 
@@ -126,9 +119,9 @@ class DeviceCodeTokenTests: XCTestCase {
             scopes: scopes
         )
         fakeDeviceCodeManager.deviceCodes[expiredDeviceCodeID] = expiredDeviceCode
-
+        
         let response = try await getDeviceCodeResponse(deviceCode: expiredDeviceCodeID)
-
+        
         XCTAssertEqual(response.status, .badRequest)
         let errorResponse = try response.content.decode(ErrorResponse.self)
         XCTAssertEqual(errorResponse.error, "expired_token")
@@ -161,5 +154,5 @@ class DeviceCodeTokenTests: XCTestCase {
             deviceCode: deviceCode
         )
     }
-
+    
 }

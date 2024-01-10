@@ -3,15 +3,15 @@ import Vapor
 
 actor RemoteTokenResponseActor {
     var remoteTokenResponse: RemoteTokenResponse?
-
+    
     func setRemoteTokenResponse(_ response: RemoteTokenResponse) {
         self.remoteTokenResponse = response
     }
-
+    
     func hasTokenResponse() async -> Bool {
         return remoteTokenResponse != nil
     }
-
+    
     func getRemoteTokenResponse() async throws -> RemoteTokenResponse {
         guard let response = remoteTokenResponse else {
             throw Abort(.internalServerError)
@@ -67,7 +67,7 @@ extension OAuthHelper {
                         responseActor: responseActor
                     )
                 }
-
+                
                 let remoteTokenResponse = try await responseActor.getRemoteTokenResponse()
                 
                 guard let user = remoteTokenResponse.user else {
@@ -78,7 +78,7 @@ extension OAuthHelper {
             }
         )
     }
-
+    
     private static func setupRemoteTokenResponse(
         request: Request,
         tokenIntrospectionEndpoint: String,

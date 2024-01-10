@@ -4,7 +4,6 @@ class StubCodeManager: CodeManager {
     
     var codeToReturn = "ABCDEFHIJKLMNO"
     
-    // Updated to include PKCE parameters
     func generateCode(
         userID: String,
         clientID: String,

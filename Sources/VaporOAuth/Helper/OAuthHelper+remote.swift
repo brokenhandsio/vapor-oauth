@@ -8,11 +8,11 @@ actor RemoteTokenResponseActor {
         self.remoteTokenResponse = response
     }
     
-    func hasTokenResponse() async -> Bool {
+    func hasTokenResponse() -> Bool {
         return remoteTokenResponse != nil
     }
     
-    func getRemoteTokenResponse() async throws -> RemoteTokenResponse {
+    func getRemoteTokenResponse() throws -> RemoteTokenResponse {
         guard let response = remoteTokenResponse else {
             throw Abort(.internalServerError)
         }

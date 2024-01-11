@@ -1,9 +1,9 @@
 import Vapor
 
-public final class OAuthResourceServer: Extendable {
+public struct OAuthResourceServer {
     public let username: String
     public let password: String
-    public var extend: Vapor.Extend = .init()
+    public var extend: [String: String]?
 
     public init(username: String, password: String) {
         self.username = username

@@ -1,6 +1,6 @@
 import Vapor
 
-public final class OAuthDiscoveryDocument: Content {
+public struct OAuthDiscoveryDocument: Content {
     public let issuer: String
     public let authorizationEndpoint: String
     public let tokenEndpoint: String

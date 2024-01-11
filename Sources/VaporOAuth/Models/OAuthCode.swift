@@ -1,6 +1,6 @@
 import Foundation
 
-public final class OAuthCode {
+public struct OAuthCode {
     public let codeID: String
     public let clientID: String
     public let redirectURI: String

@@ -1,6 +1,6 @@
 import Vapor
 
-public struct OAuthClient: Extendable, Sendable {
+public struct OAuthClient: Sendable {
     public let clientID: String
     public let redirectURIs: [String]?
     public let clientSecret: String?
@@ -13,7 +13,7 @@ public struct OAuthClient: Extendable, Sendable {
     public let postLogoutRedirectURIs: [String]?
     public let idTokenSignedResponseAlg: String? // Algorithm for signing ID tokens
 
-    public var extend: Vapor.Extend = .init()
+    public var extend: [String: String]?
 
     public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
                 confidential: Bool? = nil, firstParty: Bool = false, allowedGrantType: OAuthFlowType,

@@ -18,4 +18,6 @@ public protocol TokenManager {
     func getRefreshToken(_ refreshToken: String) async throws -> RefreshToken?
     func getAccessToken(_ accessToken: String) async throws -> AccessToken?
     func updateRefreshToken(_ refreshToken: RefreshToken, scopes: [String]) async throws
+    func getDeviceCode(_ deviceCodeString: String) async throws -> OAuthDeviceCode?
+    func deviceCodeUsed(_ deviceCode: OAuthDeviceCode) async throws
 }

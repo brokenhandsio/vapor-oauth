@@ -15,4 +15,20 @@ class StubCodeManager: CodeManager {
     func codeUsed(_ code: OAuthCode) {
         
     }
+    
+    func getDeviceCode(_ deviceCode: String) -> OAuthDeviceCode? {
+        
+        return nil
+    }
+    
+    func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) throws -> String {
+        
+        return "DEVICE_CODE"
+    }
+    
+    func deviceCodeUsed(_ deviceCode: OAuthDeviceCode) {
+        
+    }
+    
+    
 }

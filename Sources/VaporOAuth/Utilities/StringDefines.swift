@@ -13,6 +13,7 @@ struct OAuthRequestParameters {
     static let usernname = "username"
     static let csrfToken = "csrfToken"
     static let token = "token"
+    static let deviceCode = "device_code"
 }
 
 struct OAuthResponseParameters {

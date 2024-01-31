@@ -6,4 +6,7 @@ public protocol CodeManager {
     // This is explicit to ensure that the code is marked as used or deleted (it could be implied that this is done when you call
     // `getCode` but it is called explicitly to remind developers to ensure that codes can't be reused)
     func codeUsed(_ code: OAuthCode) async throws
+    func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) async throws -> String
+    func getDeviceCode(_ deviceCode: String) async throws -> OAuthDeviceCode?
+    func deviceCodeUsed(_ deviceCode: OAuthDeviceCode) async throws
 }

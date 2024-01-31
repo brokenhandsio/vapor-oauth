@@ -4,7 +4,15 @@ class StubCodeManager: CodeManager {
     
     var codeToReturn = "ABCDEFHIJKLMNO"
     
-    func generateCode(userID: String, clientID: String, redirectURI: String, scopes: [String]?) throws -> String {
+    func generateCode(
+        userID: String,
+        clientID: String,
+        redirectURI: String,
+        scopes: [String]?,
+        codeChallenge: String?,
+        codeChallengeMethod: String?,
+        nonce: String?
+    ) async throws -> String {
         return codeToReturn
     }
     
@@ -15,4 +23,20 @@ class StubCodeManager: CodeManager {
     func codeUsed(_ code: OAuthCode) {
         
     }
+    
+    func getDeviceCode(_ deviceCode: String) -> OAuthDeviceCode? {
+        
+        return nil
+    }
+    
+    func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) throws -> String {
+        
+        return "DEVICE_CODE"
+    }
+    
+    func deviceCodeUsed(_ deviceCode: OAuthDeviceCode) {
+        
+    }
+    
+    
 }

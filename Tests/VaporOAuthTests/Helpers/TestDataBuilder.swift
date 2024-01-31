@@ -17,14 +17,14 @@ class TestDataBuilder {
         registeredUsers: [OAuthUser] = []
     ) throws -> Application {
         let app = Application(environment)
-
+        
         if let sessions = sessions {
             app.sessions.use { _ in sessions }
         }
-
+        
         app.middleware.use(FakeAuthenticationMiddleware(allowedUsers: registeredUsers))
         app.middleware.use(app.sessions.middleware)
-
+        
         app.lifecycle.use(
             OAuth2(
                 codeManager: codeManager,
@@ -41,17 +41,17 @@ class TestDataBuilder {
                 )
             )
         )
-
+        
         do {
             _ = try app.testable()
         } catch {
             app.shutdown()
             throw error
         }
-
+        
         return app
     }
-
+    
     static func getTokenRequestResponse(
         with app: Application,
         grantType: String?,
@@ -62,7 +62,8 @@ class TestDataBuilder {
         scope: String? = nil,
         username: String? = nil,
         password: String? = nil,
-        refreshToken: String? = nil
+        refreshToken: String? = nil,
+        deviceCode: String? = nil
     ) async throws -> XCTHTTPResponse {
         struct RequestData: Content {
             var grantType: String?
@@ -74,7 +75,8 @@ class TestDataBuilder {
             var username: String?
             var password: String?
             var refreshToken: String?
-
+            var deviceCode: String?
+            
             enum CodingKeys: String, CodingKey {
                 case username, password, scope, code
                 case grantType = "grant_type"
@@ -82,9 +84,10 @@ class TestDataBuilder {
                 case clientSecret = "client_secret"
                 case redirectURI = "redirect_uri"
                 case refreshToken = "refresh_token"
+                case deviceCode = "device_code"
             }
         }
-
+        
         let requestData = RequestData(
             grantType: grantType,
             clientID: clientID,
@@ -94,9 +97,10 @@ class TestDataBuilder {
             scope: scope,
             username: username,
             password: password,
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            deviceCode: deviceCode
         )
-
+        
         return try await withCheckedThrowingContinuation { continuation in
             do {
                 try app.test(
@@ -114,40 +118,51 @@ class TestDataBuilder {
             }
         }
     }
-
+    
     static func getAuthRequestResponse(
         with app: Application,
         responseType: String?,
         clientID: String?,
         redirectURI: String?,
         scope: String?,
-        state: String?
+        state: String?,
+        codeChallenge: String?, // Add PKCE parameter
+        codeChallengeMethod: String? // Add PKCE parameter
     ) async throws -> XCTHTTPResponse {
-
+        
         var queries: [String] = []
-
+        
         if let responseType = responseType {
             queries.append("response_type=\(responseType)")
         }
-
+        
         if let clientID = clientID {
             queries.append("client_id=\(clientID)")
         }
-
+        
         if let redirectURI = redirectURI {
             queries.append("redirect_uri=\(redirectURI)")
         }
-
+        
         if let scope = scope {
             queries.append("scope=\(scope)")
         }
-
+        
         if let state = state {
             queries.append("state=\(state)")
         }
-
+        
+        // Include PKCE parameters in the query
+        if let codeChallenge = codeChallenge {
+            queries.append("code_challenge=\(codeChallenge)")
+        }
+        
+        if let codeChallengeMethod = codeChallengeMethod {
+            queries.append("code_challenge_method=\(codeChallengeMethod)")
+        }
+        
         let requestQuery = queries.joined(separator: "&")
-
+        
         return try await withCheckedThrowingContinuation { continuation in
             do {
                 try app.test(.GET, "/oauth/authorize?\(requestQuery)", afterResponse: { response in
@@ -158,7 +173,7 @@ class TestDataBuilder {
             }
         }
     }
-
+    
     static func getAuthResponseResponse(
         with app: Application,
         approve: Bool?,
@@ -173,38 +188,38 @@ class TestDataBuilder {
         sessionID: String? = nil
     ) async throws -> XCTHTTPResponse {
         var queries: [String] = []
-
+        
         if let clientID = clientID {
             queries.append("client_id=\(clientID)")
         }
-
+        
         if let redirectURI = redirectURI {
             queries.append("redirect_uri=\(redirectURI)")
         }
-
+        
         if let state = state {
             queries.append("state=\(state)")
         }
-
+        
         if let scope = scope {
             queries.append("scope=\(scope)")
         }
-
+        
         if let responseType = responseType {
             queries.append("response_type=\(responseType)")
         }
-
+        
         let requestQuery = queries.joined(separator: "&")
-
+        
         struct RequestBody: Encodable {
             var applicationAuthorized: Bool?
             var csrfToken: String?
         }
-
+        
         var requestBody = RequestBody()
         requestBody.applicationAuthorized = approve
         requestBody.csrfToken = csrfToken
-
+        
         return try await withCheckedThrowingContinuation { continuation in
             do {
                 try app.test(
@@ -218,7 +233,7 @@ class TestDataBuilder {
                             request.headers.cookie = sessionCookie
                         }
                         try request.content.encode(requestBody, as: .urlEncodedForm)
-
+                        
                         if let user = user {
                             request.headers.basicAuthorization = .init(
                                 username: user.username,
@@ -235,7 +250,7 @@ class TestDataBuilder {
             }
         }
     }
-
+    
     static let anyUserID: String = "12345-asbdsadi"
     static func anyOAuthUser() -> OAuthUser {
         return OAuthUser(

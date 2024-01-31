@@ -1,12 +1,16 @@
 import Foundation
 
-public final class OAuthCode {
+public struct OAuthCode {
     public let codeID: String
     public let clientID: String
     public let redirectURI: String
     public let userID: String
     public let expiryDate: Date
     public let scopes: [String]?
+
+    // PKCE parameters
+    public let codeChallenge: String?
+    public let codeChallengeMethod: String?
 
     public var extend: [String: Any] = [:]
 
@@ -16,7 +20,9 @@ public final class OAuthCode {
         redirectURI: String,
         userID: String,
         expiryDate: Date,
-        scopes: [String]?
+        scopes: [String]?,
+        codeChallenge: String?, // Add PKCE parameters
+        codeChallengeMethod: String?
     ) {
         self.codeID = codeID
         self.clientID = clientID
@@ -24,5 +30,7 @@ public final class OAuthCode {
         self.userID = userID
         self.expiryDate = expiryDate
         self.scopes = scopes
+        self.codeChallenge = codeChallenge
+        self.codeChallengeMethod = codeChallengeMethod
     }
 }

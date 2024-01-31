@@ -1,16 +1,13 @@
 public struct StaticClientRetriever: ClientRetriever {
-
-    let clients: [String: OAuthClient]
-
+    private let clients: [String: OAuthClient]
+    
     public init(clients: [OAuthClient]) {
-        self.clients = clients.reduce([String: OAuthClient]()) { (dict, client) -> [String: OAuthClient] in
-            var dict = dict
+        self.clients = clients.reduce(into: [String: OAuthClient]()) { (dict, client) in
             dict[client.clientID] = client
-            return dict
         }
     }
-
-    public func getClient(clientID: String) async throws -> OAuthClient? {
+    
+    public func getClient(clientID: String) throws -> OAuthClient? {
         return clients[clientID]
     }
 }

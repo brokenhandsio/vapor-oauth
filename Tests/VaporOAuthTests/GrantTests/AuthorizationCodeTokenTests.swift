@@ -40,6 +40,9 @@ class AuthorizationCodeTokenTests: XCTestCase {
     let testCodeID = "12345ABCD"
     let userID = "the-user-id"
     let scopes = ["email", "create"]
+    let testCodeChallenge = "testCodeChallenge"
+    let testCodeChallengeMethod = "S256"
+
 
     // MARK: - Overrides
 
@@ -62,7 +65,9 @@ class AuthorizationCodeTokenTests: XCTestCase {
             redirectURI: testClientRedirectURI,
             userID: userID,
             expiryDate: Date().addingTimeInterval(60),
-            scopes: scopes
+            scopes: scopes,
+            codeChallenge: testCodeChallenge, // Add PKCE parameter
+            codeChallengeMethod: testCodeChallengeMethod // Add PKCE parameter
         )
 
         fakeCodeManager.codes[testCodeID] = testCode
@@ -200,7 +205,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorCodeAndHeadersReturnedIfCodeWasNotIssuedByClient() async throws {
         let codeID = "1234567"
-        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil,  codeChallenge: nil, codeChallengeMethod: nil)
         fakeCodeManager.codes[codeID] = code
 
         let clientBID = "clientB"
@@ -220,7 +225,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorCodeWhenCodeIsExpired() async throws {
         let codeID = "1234567"
-        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(-60), scopes: nil)
+        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(-60), scopes: nil, codeChallenge: nil, codeChallengeMethod: nil)
         fakeCodeManager.codes[codeID] = code
 
         let response = try await getAuthCodeResponse(code: codeID)
@@ -285,7 +290,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testThatNoScopeReturnedIfNoneSetOnCode() async throws {
         let newCodeString = "NEW_CODE_STRING"
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil, codeChallenge: nil, codeChallengeMethod: nil)
         fakeCodeManager.codes[newCodeString] = newCode
 
         let response = try await getAuthCodeResponse(code: newCodeString)
@@ -344,7 +349,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
         fakeTokenManager.accessTokenToReturn = accessTokenString
         let newCodeString = "new-code-string"
         let scopes = ["oneScope", "aDifferentScope"]
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-id", expiryDate: Date().addingTimeInterval(60), scopes: scopes)
+        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-id", expiryDate: Date().addingTimeInterval(60), scopes: scopes, codeChallenge: nil, codeChallengeMethod: nil)
         fakeCodeManager.codes[newCodeString] = newCode
 
         _ = try await getAuthCodeResponse(code: newCodeString)
@@ -405,7 +410,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
         let refreshTokenString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         fakeTokenManager.refreshTokenToReturn = refreshTokenString
         let newCodeString = "new-code"
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-ID", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-ID", expiryDate: Date().addingTimeInterval(60), scopes: nil, codeChallenge: nil, codeChallengeMethod: nil)
         fakeCodeManager.codes[newCodeString] = newCode
 
         _ = try await getAuthCodeResponse(code: newCodeString)

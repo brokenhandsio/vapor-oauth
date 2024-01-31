@@ -15,4 +15,14 @@ public struct EmptyCodeManager: CodeManager {
     }
 
     public func codeUsed(_ code: OAuthCode) {}
+
+    public func getDeviceCode(_ deviceCode: String) -> OAuthDeviceCode? {
+        return nil
+    }
+
+    public func generateDeviceCode(userID: String, clientID: String, scopes: [String]?) throws -> String {
+        return ""
+    }
+
+    public func deviceCodeUsed(_ deviceCode: OAuthDeviceCode) {}
 }

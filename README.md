@@ -41,7 +41,7 @@ Latest stable
 ```swift
 dependencies: [
     ...,
-    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "0.6.1"))
+    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "0.6.1")
 ]
 ```
 
@@ -49,7 +49,7 @@ Latest beta
 ```swift
 dependencies: [
     ...,
-    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "1.0.0-beta.2"))
+    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "1.0.0-beta.2")
 ]
 ```
 

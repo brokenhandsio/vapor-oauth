@@ -3,7 +3,7 @@ public struct TokenAuthenticator {
     public init() {}
 
     func validateRefreshToken(_ refreshToken: RefreshToken, clientID: String) -> Bool {
-        guard refreshToken.clientID  == clientID else {
+        guard refreshToken.clientID == clientID else {
             return false
         }
 
@@ -19,10 +19,8 @@ public struct TokenAuthenticator {
             return false
         }
 
-        for scope in scopes {
-            if !accessTokenScopes.contains(scope) {
-                return false
-            }
+        for scope in scopes where !accessTokenScopes.contains(scope) {
+            return false
         }
 
         return true

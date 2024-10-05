@@ -1,4 +1,5 @@
 import Vapor
+
 @testable import VaporOAuth
 
 struct FakeAccessToken: AccessToken {

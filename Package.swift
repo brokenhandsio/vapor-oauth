@@ -20,9 +20,12 @@ let package = Package(
             name: "VaporOAuth",
             dependencies: [.product(name: "Vapor", package: "vapor")]
         ),
-        .testTarget(name: "VaporOAuthTests", dependencies: [
-            .target(name: "VaporOAuth"),
-            .product(name: "XCTVapor", package: "vapor")
-        ])
+        .testTarget(
+            name: "VaporOAuthTests",
+            dependencies: [
+                .target(name: "VaporOAuth"),
+                .product(name: "XCTVapor", package: "vapor"),
+            ]
+        ),
     ]
 )

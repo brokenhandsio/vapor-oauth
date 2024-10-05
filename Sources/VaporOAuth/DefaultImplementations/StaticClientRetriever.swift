@@ -11,6 +11,6 @@ public struct StaticClientRetriever: ClientRetriever {
     }
 
     public func getClient(clientID: String) async throws -> OAuthClient? {
-        return clients[clientID]
+        clients[clientID]
     }
 }

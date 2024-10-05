@@ -22,8 +22,12 @@ struct AuthorizePostHandler {
         var redirectURI = requestObject.redirectURIBaseString
 
         do {
-            try await clientValidator.validateClient(clientID: requestObject.clientID, responseType: requestObject.responseType,
-                               redirectURI: requestObject.redirectURIBaseString, scopes: requestObject.scopes)
+            try await clientValidator.validateClient(
+                clientID: requestObject.clientID,
+                responseType: requestObject.responseType,
+                redirectURI: requestObject.redirectURIBaseString,
+                scopes: requestObject.scopes
+            )
         } catch is AbortError {
             throw Abort(.forbidden)
         } catch {
@@ -106,9 +110,16 @@ struct AuthorizePostHandler {
             scopes = nil
         }
 
-        return AuthorizePostRequest(user: user, userID: userID, redirectURIBaseString: redirectURIBaseString,
-                                    approveApplication: approveApplication, clientID: clientID,
-                                    responseType: responseType, csrfToken: csrfToken, scopes: scopes)
+        return AuthorizePostRequest(
+            user: user,
+            userID: userID,
+            redirectURIBaseString: redirectURIBaseString,
+            approveApplication: approveApplication,
+            clientID: clientID,
+            responseType: responseType,
+            csrfToken: csrfToken,
+            scopes: scopes
+        )
     }
 
 }

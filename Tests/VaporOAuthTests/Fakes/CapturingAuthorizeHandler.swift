@@ -1,5 +1,5 @@
-import VaporOAuth
 import Vapor
+import VaporOAuth
 
 class CapturingAuthoriseHandler: AuthorizeHandler {
     private(set) var request: Request?
@@ -9,7 +9,7 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
     private(set) var scope: [String]?
     private(set) var state: String?
     private(set) var csrfToken: String?
-    
+
     func handleAuthorizationRequest(
         _ request: Request,
         authorizationRequestObject: AuthorizationRequestObject
@@ -21,10 +21,10 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
         self.scope = authorizationRequestObject.scope
         self.state = authorizationRequestObject.state
         self.csrfToken = authorizationRequestObject.csrfToken
-        
+
         return Response(body: .init(string: "Allow/Deny"))
     }
-    
+
     private(set) var authorizationError: AuthorizationError?
     func handleAuthorizationError(_ errorType: AuthorizationError) async throws -> Response {
         authorizationError = errorType

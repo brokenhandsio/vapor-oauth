@@ -1,4 +1,5 @@
 import Vapor
+
 @testable import VaporOAuth
 
 struct FakeAuthenticationMiddleware: AsyncMiddleware {
@@ -14,7 +15,8 @@ struct FakeAuthenticationMiddleware: AsyncMiddleware {
         if let basicAuth = request.headers.basicAuthorization,
             let user = allowedUsers.first(
                 where: { $0.username == basicAuth.username && $0.password == basicAuth.password }
-        ) {
+            )
+        {
             request.auth.login(user)
         }
         return try await next.respond(to: request)

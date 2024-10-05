@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class ImplicitGrantTests: XCTestCase {
@@ -62,7 +63,8 @@ class ImplicitGrantTests: XCTestCase {
             return
         }
 
-        let expectedRedirectURI = "\(testRedirectURIString)?error=invalid_request&error_description=Request+was+missing+the+response_type+parameter"
+        let expectedRedirectURI =
+            "\(testRedirectURIString)?error=invalid_request&error_description=Request+was+missing+the+response_type+parameter"
 
         XCTAssertEqual(response.status, .seeOther)
         XCTAssertEqual(redirectURL, expectedRedirectURI)
@@ -158,7 +160,13 @@ class ImplicitGrantTests: XCTestCase {
 
     func testClientNotConfiguredWithAccessToImplciitFlowCantAccessItForGet() async throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .refresh)
+        let unauthorizedClient = OAuthClient(
+            clientID: unauthorizedID,
+            redirectURIs: [testRedirectURIString],
+            clientSecret: nil,
+            validScopes: nil,
+            allowedGrantType: .refresh
+        )
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
 
         let response = try await makeImplicitGrantRequest(clientID: unauthorizedID)
@@ -168,7 +176,13 @@ class ImplicitGrantTests: XCTestCase {
 
     func testClientConfiguredWithAccessToImplicitFlowCanAccessItForGet() async throws {
         let authorizedID = "not-allowed"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .implicit)
+        let authorizedClient = OAuthClient(
+            clientID: authorizedID,
+            redirectURIs: [testRedirectURIString],
+            clientSecret: nil,
+            validScopes: nil,
+            allowedGrantType: .implicit
+        )
         fakeClientGetter.validClients[authorizedID] = authorizedClient
 
         let response = try await makeImplicitGrantRequest(clientID: authorizedID)
@@ -182,7 +196,10 @@ class ImplicitGrantTests: XCTestCase {
         let denyResponse = try await getImplicitGrantResponse(approve: false)
 
         XCTAssertEqual(denyResponse.status, .seeOther)
-        XCTAssertEqual(denyResponse.headers.location?.value, "\(testRedirectURIString)?error=access_denied&error_description=user+denied+the+request")
+        XCTAssertEqual(
+            denyResponse.headers.location?.value,
+            "\(testRedirectURIString)?error=access_denied&error_description=user+denied+the+request"
+        )
     }
 
     func testThatTheStateIsReturnedIfUserDoesNotAuthorizeApplication() async throws {
@@ -190,7 +207,10 @@ class ImplicitGrantTests: XCTestCase {
         let authorizationDenyResponse = try await getImplicitGrantResponse(approve: false, state: state)
 
         XCTAssertEqual(authorizationDenyResponse.status, .seeOther)
-        XCTAssertEqual(authorizationDenyResponse.headers.location?.value, "\(testRedirectURIString)?error=access_denied&error_description=user+denied+the+request&state=\(state)")
+        XCTAssertEqual(
+            authorizationDenyResponse.headers.location?.value,
+            "\(testRedirectURIString)?error=access_denied&error_description=user+denied+the+request&state=\(state)"
+        )
     }
 
     func testThatRedirectURICanBeConfiguredIfUserDoesNotAuthorizeApplication() async throws {
@@ -202,7 +222,10 @@ class ImplicitGrantTests: XCTestCase {
         let authorizationDenyResponse = try await getImplicitGrantResponse(approve: false, clientID: clientID, redirectURI: redirectURI)
 
         XCTAssertEqual(authorizationDenyResponse.status, .seeOther)
-        XCTAssertEqual(authorizationDenyResponse.headers.location?.value, "\(redirectURI)?error=access_denied&error_description=user+denied+the+request")
+        XCTAssertEqual(
+            authorizationDenyResponse.headers.location?.value,
+            "\(redirectURI)?error=access_denied&error_description=user+denied+the+request"
+        )
     }
 
     func testThatAuthorizationApprovalMustBeSentInPostRequest() async throws {
@@ -250,7 +273,7 @@ class ImplicitGrantTests: XCTestCase {
             registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
 
-        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+        try await Task.sleep(nanoseconds: 1)  // Without this the tests are crashing (segmentation fault) on ubuntu
 
         let clientID = "ABCDE1234"
         let redirectURI = "http://api.brokenhands.io/callback"
@@ -290,7 +313,10 @@ class ImplicitGrantTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(redirectHeader, "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&state=\(state)")
+        XCTAssertEqual(
+            redirectHeader,
+            "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&state=\(state)"
+        )
     }
 
     func testThatTokenHasScopesIfRequested() async throws {
@@ -306,7 +332,10 @@ class ImplicitGrantTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(redirectHeader, "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&scope=\(expectedScope)")
+        XCTAssertEqual(
+            redirectHeader,
+            "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&scope=\(expectedScope)"
+        )
     }
 
     func testThatRedirectHasStateAndScopeIfBothProvided() async throws {
@@ -323,7 +352,10 @@ class ImplicitGrantTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(redirectHeader, "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&scope=\(expectedScope)&state=\(state)")
+        XCTAssertEqual(
+            redirectHeader,
+            "\(testRedirectURIString)#token_type=bearer&access_token=\(accessToken)&expires_in=3600&scope=\(expectedScope)&state=\(state)"
+        )
 
         guard let token = fakeTokenManager.getAccessToken(accessToken) else {
             XCTFail()
@@ -362,7 +394,7 @@ class ImplicitGrantTests: XCTestCase {
             registeredUsers: [user]
         )
 
-        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+        try await Task.sleep(nanoseconds: 1)  // Without this the tests are crashing (segmentation fault) on ubuntu
 
         _ = try await getImplicitGrantResponse(user: user)
 
@@ -397,7 +429,7 @@ class ImplicitGrantTests: XCTestCase {
             sessions: fakeSessions
         )
 
-        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+        try await Task.sleep(nanoseconds: 1)  // Without this the tests are crashing (segmentation fault) on ubuntu
 
         let response = try await getImplicitGrantResponse(user: nil)
 
@@ -446,7 +478,13 @@ class ImplicitGrantTests: XCTestCase {
 
     func testClientNotConfiguredWithAccessToImplciitFlowCantAccessIt() async throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .refresh)
+        let unauthorizedClient = OAuthClient(
+            clientID: unauthorizedID,
+            redirectURIs: [testRedirectURIString],
+            clientSecret: nil,
+            validScopes: nil,
+            allowedGrantType: .refresh
+        )
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
 
         let response = try await getImplicitGrantResponse(clientID: unauthorizedID)
@@ -456,14 +494,19 @@ class ImplicitGrantTests: XCTestCase {
 
     func testClientConfiguredWithAccessToImplicitFlowCanAccessIt() async throws {
         let authorizedID = "not-allowed"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: [testRedirectURIString], clientSecret: nil, validScopes: nil, allowedGrantType: .implicit)
+        let authorizedClient = OAuthClient(
+            clientID: authorizedID,
+            redirectURIs: [testRedirectURIString],
+            clientSecret: nil,
+            validScopes: nil,
+            allowedGrantType: .implicit
+        )
         fakeClientGetter.validClients[authorizedID] = authorizedClient
 
         let response = try await getImplicitGrantResponse(clientID: authorizedID)
 
         XCTAssertEqual(response.status, .seeOther)
     }
-
 
     // MARK: - Private
 
@@ -474,7 +517,14 @@ class ImplicitGrantTests: XCTestCase {
         scope: String? = nil,
         state: String? = nil
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthRequestResponse(with: app, responseType: responseType, clientID: clientID, redirectURI: redirectURI, scope: scope, state: state)
+        try await TestDataBuilder.getAuthRequestResponse(
+            with: app,
+            responseType: responseType,
+            clientID: clientID,
+            redirectURI: redirectURI,
+            scope: scope,
+            state: state
+        )
     }
 
     private func getImplicitGrantResponse(
@@ -488,7 +538,7 @@ class ImplicitGrantTests: XCTestCase {
         csrfToken: String? = "the-csrf-token",
         sessionID: String? = "the-session-ID"
     ) async throws -> XCTHTTPResponse {
-        return try await TestDataBuilder.getAuthResponseResponse(
+        try await TestDataBuilder.getAuthResponseResponse(
             with: app,
             approve: approve,
             clientID: clientID,

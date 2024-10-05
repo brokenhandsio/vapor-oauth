@@ -1,0 +1,20 @@
+name: Swift Linting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  lint-swift-code:
+    name: Swift Code Linting
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install swift-format
+        run: brew install swift-format
+      - name: Lint Swift Code
+        run: Scripts/lint-swift-code

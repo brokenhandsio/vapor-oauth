@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class AuthorizationCodeTokenTests: XCTestCase {
@@ -156,7 +157,12 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorAndHeadersReceivedIfClientSecretNotSendAndIsExpected() async throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .authorization)
+        let clientWithSecret = OAuthClient(
+            clientID: clientID,
+            redirectURIs: ["https://api.brokenhands.io/callback"],
+            clientSecret: "1234567890ABCD",
+            allowedGrantType: .authorization
+        )
         fakeClientGetter.validClients[clientID] = clientWithSecret
 
         let response = try await getAuthCodeResponse(clientID: clientID, clientSecret: nil)
@@ -172,7 +178,12 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorAndHeadersReceivedIfClientDoesNotAuthenticateCorrectly() async throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .authorization)
+        let clientWithSecret = OAuthClient(
+            clientID: clientID,
+            redirectURIs: ["https://api.brokenhands.io/callback"],
+            clientSecret: "1234567890ABCD",
+            allowedGrantType: .authorization
+        )
         fakeClientGetter.validClients[clientID] = clientWithSecret
 
         let response = try await getAuthCodeResponse(clientID: clientID, clientSecret: "incorrectPassword")
@@ -200,14 +211,26 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorCodeAndHeadersReturnedIfCodeWasNotIssuedByClient() async throws {
         let codeID = "1234567"
-        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let code = OAuthCode(
+            codeID: codeID,
+            clientID: testClientID,
+            redirectURI: testClientRedirectURI,
+            userID: "1",
+            expiryDate: Date().addingTimeInterval(60),
+            scopes: nil
+        )
         fakeCodeManager.codes[codeID] = code
 
         let clientBID = "clientB"
         let clientB = OAuthClient(clientID: clientBID, redirectURIs: [testClientRedirectURI], allowedGrantType: .authorization)
         fakeClientGetter.validClients[clientBID] = clientB
 
-        let response = try await getAuthCodeResponse(code: codeID, redirectURI: testClientRedirectURI, clientID: clientBID, clientSecret: nil)
+        let response = try await getAuthCodeResponse(
+            code: codeID,
+            redirectURI: testClientRedirectURI,
+            clientID: clientBID,
+            clientSecret: nil
+        )
 
         let responseJSON = try JSONDecoder().decode(ErrorResponse.self, from: response.body)
 
@@ -220,7 +243,14 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testCorrectErrorCodeWhenCodeIsExpired() async throws {
         let codeID = "1234567"
-        let code = OAuthCode(codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(-60), scopes: nil)
+        let code = OAuthCode(
+            codeID: codeID,
+            clientID: testClientID,
+            redirectURI: testClientRedirectURI,
+            userID: "1",
+            expiryDate: Date().addingTimeInterval(-60),
+            scopes: nil
+        )
         fakeCodeManager.codes[codeID] = code
 
         let response = try await getAuthCodeResponse(code: codeID)
@@ -285,7 +315,14 @@ class AuthorizationCodeTokenTests: XCTestCase {
 
     func testThatNoScopeReturnedIfNoneSetOnCode() async throws {
         let newCodeString = "NEW_CODE_STRING"
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "1", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let newCode = OAuthCode(
+            codeID: newCodeString,
+            clientID: testClientID,
+            redirectURI: testClientRedirectURI,
+            userID: "1",
+            expiryDate: Date().addingTimeInterval(60),
+            scopes: nil
+        )
         fakeCodeManager.codes[newCodeString] = newCode
 
         let response = try await getAuthCodeResponse(code: newCodeString)
@@ -303,7 +340,12 @@ class AuthorizationCodeTokenTests: XCTestCase {
     }
 
     func testThatClientSecretNotNeededIfClientNotIssuedWithOne() async throws {
-        let clientWithoutSecret = OAuthClient(clientID: testClientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: nil, allowedGrantType: .authorization)
+        let clientWithoutSecret = OAuthClient(
+            clientID: testClientID,
+            redirectURIs: ["https://api.brokenhands.io/callback"],
+            clientSecret: nil,
+            allowedGrantType: .authorization
+        )
         fakeClientGetter.validClients[testClientID] = clientWithoutSecret
 
         let response = try await getAuthCodeResponse(clientID: testClientID, clientSecret: nil)
@@ -344,7 +386,14 @@ class AuthorizationCodeTokenTests: XCTestCase {
         fakeTokenManager.accessTokenToReturn = accessTokenString
         let newCodeString = "new-code-string"
         let scopes = ["oneScope", "aDifferentScope"]
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-id", expiryDate: Date().addingTimeInterval(60), scopes: scopes)
+        let newCode = OAuthCode(
+            codeID: newCodeString,
+            clientID: testClientID,
+            redirectURI: testClientRedirectURI,
+            userID: "user-id",
+            expiryDate: Date().addingTimeInterval(60),
+            scopes: scopes
+        )
         fakeCodeManager.codes[newCodeString] = newCode
 
         _ = try await getAuthCodeResponse(code: newCodeString)
@@ -405,7 +454,14 @@ class AuthorizationCodeTokenTests: XCTestCase {
         let refreshTokenString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         fakeTokenManager.refreshTokenToReturn = refreshTokenString
         let newCodeString = "new-code"
-        let newCode = OAuthCode(codeID: newCodeString, clientID: testClientID, redirectURI: testClientRedirectURI, userID: "user-ID", expiryDate: Date().addingTimeInterval(60), scopes: nil)
+        let newCode = OAuthCode(
+            codeID: newCodeString,
+            clientID: testClientID,
+            redirectURI: testClientRedirectURI,
+            userID: "user-ID",
+            expiryDate: Date().addingTimeInterval(60),
+            scopes: nil
+        )
         fakeCodeManager.codes[newCodeString] = newCode
 
         _ = try await getAuthCodeResponse(code: newCodeString)
@@ -442,7 +498,7 @@ class AuthorizationCodeTokenTests: XCTestCase {
         clientSecret: String? = "ABCDEFGHIJK"
     ) async throws -> XCTHTTPResponse {
 
-        return try await TestDataBuilder.getTokenRequestResponse(
+        try await TestDataBuilder.getTokenRequestResponse(
             with: app,
             grantType: grantType,
             clientID: clientID,

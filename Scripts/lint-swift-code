@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+swift-format lint \
+  --recursive \
+  --parallel \
+  --strict \
+  --configuration swift-format.json \
+  Sources/ \
+  Tests/ \
+  Package.swift

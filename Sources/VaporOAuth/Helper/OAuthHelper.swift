@@ -6,7 +6,7 @@ public struct OAuthHelper {
 
     public init(
         assertScopes: @escaping ([String]?, Request) async throws -> Void,
-        user: @escaping (Request) async throws  -> OAuthUser
+        user: @escaping (Request) async throws -> OAuthUser
     ) {
         self.assertScopes = assertScopes
         self.user = user

@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class AuthorizationResponseTests: XCTestCase {
@@ -13,7 +14,7 @@ class AuthorizationResponseTests: XCTestCase {
     static let clientID = "1234567890"
     static let redirectURI = "https://api.brokenhands.io/callback"
 
-//    let fakeSessions: FakeSessions!
+    //    let fakeSessions: FakeSessions!
     let scope1 = "email"
     let scope2 = "address"
     let scope3 = "profile"
@@ -88,7 +89,9 @@ class AuthorizationResponseTests: XCTestCase {
         )
 
         XCTAssertEqual(authorizationDenyResponse.status, .seeOther)
-        XCTAssertEqual(authorizationDenyResponse.headers.location?.value, "\(redirectURI)?error=access_denied&error_description=user+denied+the+request")
+        XCTAssertEqual(
+            authorizationDenyResponse.headers.location?.value,
+            "\(redirectURI)?error=access_denied&error_description=user+denied+the+request")
     }
 
     func testThatAuthorizationApprovalMustBeSentInPostRequest() async throws {
@@ -137,7 +140,7 @@ class AuthorizationResponseTests: XCTestCase {
             registeredUsers: [TestDataBuilder.anyOAuthUser()]
         )
 
-        try await Task.sleep(nanoseconds: 1) // Without this the tests are crashing (segmentation fault) on ubuntu
+        try await Task.sleep(nanoseconds: 1)  // Without this the tests are crashing (segmentation fault) on ubuntu
 
         let clientID = "ABCDE1234"
         let redirectURI = "http://api.brokenhands.io/callback"
@@ -275,7 +278,9 @@ class AuthorizationResponseTests: XCTestCase {
 
     func testClientNotConfiguredWithAccessToAuthCodeFlowCantAccessItForGet() async throws {
         let unauthorizedID = "not-allowed"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: [AuthorizationResponseTests.redirectURI], clientSecret: nil, validScopes: nil, allowedGrantType: .implicit)
+        let unauthorizedClient = OAuthClient(
+            clientID: unauthorizedID, redirectURIs: [AuthorizationResponseTests.redirectURI], clientSecret: nil, validScopes: nil,
+            allowedGrantType: .implicit)
         fakeClientRetriever.validClients[unauthorizedID] = unauthorizedClient
 
         let response = try await getAuthResponse(clientID: unauthorizedID)

@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class TokenRefreshTests: XCTestCase {
@@ -141,7 +142,9 @@ class TokenRefreshTests: XCTestCase {
     func testThatNonConfidentialClientsGetErrorWhenRequestingToken() async throws {
         let nonConfidentialClientID = "NONCONF"
         let nonConfidentialClientSecret = "SECRET"
-        let nonConfidentialClient = OAuthClient(clientID: nonConfidentialClientID, redirectURIs: nil, clientSecret: nonConfidentialClientSecret, confidential: false, allowedGrantType: .authorization)
+        let nonConfidentialClient = OAuthClient(
+            clientID: nonConfidentialClientID, redirectURIs: nil, clientSecret: nonConfidentialClientSecret, confidential: false,
+            allowedGrantType: .authorization)
         fakeClientGetter.validClients[nonConfidentialClientID] = nonConfidentialClient
 
         let response = try await getTokenResponse(clientID: nonConfidentialClientID, clientSecret: nonConfidentialClientSecret)
@@ -172,7 +175,9 @@ class TokenRefreshTests: XCTestCase {
     func testThatAttemptingRefreshWithRefreshTokenFromDifferentClientReturnsError() async throws {
         let otherClientID = "ABCDEFGHIJKLMON"
         let otherClientSecret = "1234"
-        let otherClient = OAuthClient(clientID: otherClientID, redirectURIs: nil, clientSecret: otherClientSecret, confidential: true, allowedGrantType: .authorization)
+        let otherClient = OAuthClient(
+            clientID: otherClientID, redirectURIs: nil, clientSecret: otherClientSecret, confidential: true,
+            allowedGrantType: .authorization)
         fakeClientGetter.validClients[otherClientID] = otherClient
 
         let response = try await getTokenResponse(clientID: otherClientID, clientSecret: otherClientSecret)
@@ -280,7 +285,8 @@ class TokenRefreshTests: XCTestCase {
         let responseJSON = try JSONDecoder().decode(SuccessResponse.self, from: response.body)
 
         guard let accessTokenString = responseJSON.accessToken,
-              let accessToken = fakeTokenManager.getAccessToken(accessTokenString) else {
+            let accessToken = fakeTokenManager.getAccessToken(accessTokenString)
+        else {
             XCTFail()
             return
         }
@@ -302,7 +308,8 @@ class TokenRefreshTests: XCTestCase {
         let responseJSON = try JSONDecoder().decode(SuccessResponse.self, from: response.body)
 
         guard let accessTokenString = responseJSON.accessToken,
-              let accessToken = fakeTokenManager.getAccessToken(accessTokenString) else {
+            let accessToken = fakeTokenManager.getAccessToken(accessTokenString)
+        else {
             XCTFail()
             return
         }
@@ -336,7 +343,8 @@ class TokenRefreshTests: XCTestCase {
         let userID = "abcdefg-123456"
         let accessToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         let userIDRefreshTokenString = "ASHFUIEWHFIHEWIUF"
-        let userIDRefreshToken = FakeRefreshToken(tokenString: userIDRefreshTokenString, clientID: testClientID, userID: userID, scopes: [scope1, scope2])
+        let userIDRefreshToken = FakeRefreshToken(
+            tokenString: userIDRefreshTokenString, clientID: testClientID, userID: userID, scopes: [scope1, scope2])
         fakeTokenManager.refreshTokens[userIDRefreshTokenString] = userIDRefreshToken
         fakeTokenManager.accessTokenToReturn = accessToken
         _ = try await getTokenResponse(refreshToken: userIDRefreshTokenString)
@@ -354,7 +362,8 @@ class TokenRefreshTests: XCTestCase {
         let clientID = "the-client-id-to-set"
         let refreshToken = FakeRefreshToken(tokenString: refreshTokenString, clientID: clientID, userID: "some-user")
         fakeTokenManager.refreshTokens[refreshTokenString] = refreshToken
-        fakeClientGetter.validClients[clientID] = OAuthClient(clientID: clientID, redirectURIs: nil, clientSecret: testClientSecret, confidential: true, allowedGrantType: .authorization)
+        fakeClientGetter.validClients[clientID] = OAuthClient(
+            clientID: clientID, redirectURIs: nil, clientSecret: testClientSecret, confidential: true, allowedGrantType: .authorization)
 
         let response = try await getTokenResponse(clientID: clientID, refreshToken: refreshTokenString)
         let responseJSON = try JSONDecoder().decode(SuccessResponse.self, from: response.body)

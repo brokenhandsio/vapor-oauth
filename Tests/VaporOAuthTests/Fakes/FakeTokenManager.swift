@@ -1,5 +1,5 @@
-import VaporOAuth
 import Foundation
+import VaporOAuth
 
 class FakeTokenManager: TokenManager {
 
@@ -17,8 +17,12 @@ class FakeTokenManager: TokenManager {
         return accessTokens[accessToken]
     }
 
-    func generateAccessRefreshTokens(clientID: String, userID: String?, scopes: [String]?, accessTokenExpiryTime: Int) throws -> (AccessToken, RefreshToken) {
-        let accessToken = FakeAccessToken(tokenString: accessTokenToReturn, clientID: clientID, userID: userID, scopes: scopes, expiryTime: currentTime.addingTimeInterval(TimeInterval(accessTokenExpiryTime)))
+    func generateAccessRefreshTokens(clientID: String, userID: String?, scopes: [String]?, accessTokenExpiryTime: Int) throws -> (
+        AccessToken, RefreshToken
+    ) {
+        let accessToken = FakeAccessToken(
+            tokenString: accessTokenToReturn, clientID: clientID, userID: userID, scopes: scopes,
+            expiryTime: currentTime.addingTimeInterval(TimeInterval(accessTokenExpiryTime)))
         let refreshToken = FakeRefreshToken(tokenString: refreshTokenToReturn, clientID: clientID, userID: userID, scopes: scopes)
 
         accessTokens[accessTokenToReturn] = accessToken
@@ -27,7 +31,9 @@ class FakeTokenManager: TokenManager {
     }
 
     func generateAccessToken(clientID: String, userID: String?, scopes: [String]?, expiryTime: Int) throws -> AccessToken {
-        let accessToken = FakeAccessToken(tokenString: accessTokenToReturn, clientID: clientID, userID: userID, scopes: scopes, expiryTime: currentTime.addingTimeInterval(TimeInterval(expiryTime)))
+        let accessToken = FakeAccessToken(
+            tokenString: accessTokenToReturn, clientID: clientID, userID: userID, scopes: scopes,
+            expiryTime: currentTime.addingTimeInterval(TimeInterval(expiryTime)))
         accessTokens[accessTokenToReturn] = accessToken
         return accessToken
     }

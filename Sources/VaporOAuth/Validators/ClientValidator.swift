@@ -42,8 +42,10 @@ struct ClientValidator {
         }
     }
 
-    func authenticateClient(clientID: String, clientSecret: String?, grantType: OAuthFlowType?,
-                            checkConfidentialClient: Bool = false) async throws {
+    func authenticateClient(
+        clientID: String, clientSecret: String?, grantType: OAuthFlowType?,
+        checkConfidentialClient: Bool = false
+    ) async throws {
         guard let client = try await clientRetriever.getClient(clientID: clientID) else {
             throw ClientError.unauthorized
         }

@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class PasswordGrantTokenTests: XCTestCase {
@@ -139,7 +140,9 @@ class PasswordGrantTokenTests: XCTestCase {
 
     func testCorrectErrorWhenClientDoesNotAuthenticate() async throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .password)
+        let clientWithSecret = OAuthClient(
+            clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD",
+            allowedGrantType: .password)
         fakeClientGetter.validClients[clientID] = clientWithSecret
 
         let response = try await getPasswordResponse(clientID: clientID, clientSecret: "incorrectPassword")
@@ -155,7 +158,9 @@ class PasswordGrantTokenTests: XCTestCase {
 
     func testCorrectErrorIfClientSecretNotSentAndIsExpected() async throws {
         let clientID = "ABCDEF"
-        let clientWithSecret = OAuthClient(clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD", allowedGrantType: .password)
+        let clientWithSecret = OAuthClient(
+            clientID: clientID, redirectURIs: ["https://api.brokenhands.io/callback"], clientSecret: "1234567890ABCD",
+            allowedGrantType: .password)
         fakeClientGetter.validClients[clientID] = clientWithSecret
 
         let response = try await getPasswordResponse(clientID: clientID, clientSecret: nil)
@@ -207,7 +212,6 @@ class PasswordGrantTokenTests: XCTestCase {
         XCTAssertEqual(responseJSON.refreshToken, refreshToken)
     }
 
-
     func testScopeSetOnTokenIfRequested() async throws {
         let scope = "email create"
 
@@ -224,7 +228,9 @@ class PasswordGrantTokenTests: XCTestCase {
         XCTAssertEqual(responseJSON.refreshToken, refreshToken)
         XCTAssertEqual(responseJSON.scope, scope)
 
-        guard let accessToken = fakeTokenManager.getAccessToken(accessToken), let refreshToken = fakeTokenManager.getRefreshToken(refreshToken) else {
+        guard let accessToken = fakeTokenManager.getAccessToken(accessToken),
+            let refreshToken = fakeTokenManager.getRefreshToken(refreshToken)
+        else {
             XCTFail()
             return
         }
@@ -376,7 +382,9 @@ class PasswordGrantTokenTests: XCTestCase {
     func testClientNotConfiguredWithAccessToPasswordFlowCantAccessIt() async throws {
         let unauthorizedID = "not-allowed"
         let unauthorizedSecret = "client-secret"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantType: .clientCredentials)
+        let unauthorizedClient = OAuthClient(
+            clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true,
+            firstParty: true, allowedGrantType: .clientCredentials)
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
 
         let response = try await getPasswordResponse(clientID: unauthorizedID, clientSecret: unauthorizedSecret)

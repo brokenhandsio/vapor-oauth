@@ -22,4 +22,4 @@ struct SuccessResponse: Decodable {
         case refreshToken = "refresh_token"
         case scope
     }
-    }
+}

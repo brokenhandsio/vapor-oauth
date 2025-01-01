@@ -83,7 +83,7 @@ struct AuthorizePostHandler {
             throw Abort(.badRequest)
         }
 
-        guard let approveApplication: Bool = request.content[OAuthRequestParameters.applicationAuthorized] else {
+        guard let approveApplicationReceived: Bool? = request.content[OAuthRequestParameters.applicationAuthorized], let approveApplication = approveApplicationReceived else {
             throw Abort(.badRequest)
         }
 

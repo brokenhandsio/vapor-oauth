@@ -1,4 +1,4 @@
-struct OAuthRequestParameters {
+enum OAuthRequestParameters {
     static let clientID = "client_id"
     static let clientSecret = "client_secret"
     static let redirectURI = "redirect_uri"
@@ -15,7 +15,7 @@ struct OAuthRequestParameters {
     static let token = "token"
 }
 
-struct OAuthResponseParameters {
+enum OAuthResponseParameters {
 
     static let error = "error"
     static let errorDescription = "error_description"
@@ -31,7 +31,7 @@ struct OAuthResponseParameters {
     static let email = "email_address"
     static let expiry = "exp"
 
-    struct ErrorType {
+    enum ErrorType {
         static let invalidRequest = "invalid_request"
         static let invalidScope = "invalid_scope"
         static let invalidClient = "invalid_client"
@@ -42,11 +42,11 @@ struct OAuthResponseParameters {
     }
 }
 
-struct ResponseType {
+enum ResponseType {
     static let code = "code"
     static let token = "token"
 }
 
-struct SessionData {
+enum SessionData {
     static let csrfToken = "CSRFToken"
 }

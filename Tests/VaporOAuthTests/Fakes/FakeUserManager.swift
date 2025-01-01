@@ -2,7 +2,7 @@ import VaporOAuth
 
 class FakeUserManager: UserManager {
     var users: [OAuthUser] = []
-    
+
     func authenticateUser(username: String, password: String) -> String? {
         for user in users {
             if user.username == username {
@@ -11,10 +11,10 @@ class FakeUserManager: UserManager {
                 }
             }
         }
-        
+
         return nil
     }
-    
+
     func getUser(userID: String) -> OAuthUser? {
         for user in users {
             if user.id == userID {

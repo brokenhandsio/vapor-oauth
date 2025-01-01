@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class TokenIntrospectionTests: XCTestCase {
@@ -93,7 +94,8 @@ class TokenIntrospectionTests: XCTestCase {
 
     func testThatExpiredTokenReturnsInactive() async throws {
         let tokenString = "EXPIRED_TOKEN"
-        let expiredToken = FakeAccessToken(tokenString: tokenString, clientID: testClientID, userID: nil, expiryTime: Date().addingTimeInterval(-60))
+        let expiredToken = FakeAccessToken(
+            tokenString: tokenString, clientID: testClientID, userID: nil, expiryTime: Date().addingTimeInterval(-60))
         fakeTokenManager.accessTokens[tokenString] = expiredToken
         let response = try await getInfoResponse(token: tokenString)
 
@@ -114,7 +116,9 @@ class TokenIntrospectionTests: XCTestCase {
 
     func testThatScopeReturnedInReponseIfTokenHasScope() async throws {
         let tokenString = "VALID_TOKEN"
-        let validToken = FakeAccessToken(tokenString: tokenString, clientID: clientID, userID: nil, scopes: ["email", "profile"], expiryTime: Date().addingTimeInterval(60))
+        let validToken = FakeAccessToken(
+            tokenString: tokenString, clientID: clientID, userID: nil, scopes: ["email", "profile"],
+            expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[tokenString] = validToken
 
         let response = try await getInfoResponse(token: tokenString)
@@ -140,7 +144,8 @@ class TokenIntrospectionTests: XCTestCase {
         let userID = "123"
         let username = "hansolo"
         let tokenString = "VALID_TOKEN"
-        let validToken = FakeAccessToken(tokenString: tokenString, clientID: clientID, userID: userID, expiryTime: Date().addingTimeInterval(60))
+        let validToken = FakeAccessToken(
+            tokenString: tokenString, clientID: clientID, userID: userID, expiryTime: Date().addingTimeInterval(60))
         fakeTokenManager.accessTokens[tokenString] = validToken
         let newUser = OAuthUser(userID: userID, username: username, emailAddress: "han@therebelalliance.com", password: "leia")
         fakeUserManager.users.append(newUser)

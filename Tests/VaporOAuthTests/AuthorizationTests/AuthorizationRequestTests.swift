@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class AuthorizationRequestTests: XCTestCase {
@@ -363,7 +364,7 @@ class AuthorizationRequestTests: XCTestCase {
         XCTAssertEqual(response.status, .ok)
     }
 
-//    // MARK: - Private
+    //    // MARK: - Private
 
     private func respondToOAuthRequest(
         responseType: String? = "code",
@@ -385,7 +386,7 @@ class AuthorizationRequestTests: XCTestCase {
 }
 
 extension URI: Equatable {
-    public static func ==(lhs: URI, rhs: URI) -> Bool {
+    public static func == (lhs: URI, rhs: URI) -> Bool {
         return lhs.description == rhs.description
     }
 }

@@ -19,5 +19,4 @@ struct FakeSessions: SessionDriver {
         return request.eventLoop.makeSucceededFuture(())
     }
 
-
 }

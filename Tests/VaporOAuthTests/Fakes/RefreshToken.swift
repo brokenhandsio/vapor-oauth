@@ -1,4 +1,5 @@
 import Vapor
+
 @testable import VaporOAuth
 
 public struct FakeRefreshToken: RefreshToken {

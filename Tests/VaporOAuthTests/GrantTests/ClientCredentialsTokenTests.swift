@@ -1,4 +1,5 @@
 import XCTVapor
+
 @testable import VaporOAuth
 
 class ClientCredentialsTokenTests: XCTestCase {
@@ -148,7 +149,9 @@ class ClientCredentialsTokenTests: XCTestCase {
         XCTAssertEqual(responseJSON.refreshToken, refreshToken)
         XCTAssertEqual(responseJSON.scope, scope)
 
-        guard let accessToken = fakeTokenManager.getAccessToken(accessToken), let refreshToken = fakeTokenManager.getRefreshToken(refreshToken) else {
+        guard let accessToken = fakeTokenManager.getAccessToken(accessToken),
+            let refreshToken = fakeTokenManager.getRefreshToken(refreshToken)
+        else {
             XCTFail()
             return
         }
@@ -188,7 +191,9 @@ class ClientCredentialsTokenTests: XCTestCase {
     func testCorrectErrorWhenNonConfidentialClientTriesToUseCredentialsGrantType() async throws {
         let newClientID = "1234"
         let newClientSecret = "1234567899"
-        let newClient = OAuthClient(clientID: newClientID, redirectURIs: nil, clientSecret: newClientSecret, confidential: false, allowedGrantType: .clientCredentials)
+        let newClient = OAuthClient(
+            clientID: newClientID, redirectURIs: nil, clientSecret: newClientSecret, confidential: false,
+            allowedGrantType: .clientCredentials)
         fakeClientGetter.validClients[newClientID] = newClient
 
         let response = try await getClientCredentialsResponse(clientID: newClientID, clientSecret: newClientSecret)
@@ -225,7 +230,9 @@ class ClientCredentialsTokenTests: XCTestCase {
 
     func testClientIDSetOnAccessTokenCorrectly() async throws {
         let newClientString = "a-new-client"
-        let newClient = OAuthClient(clientID: newClientString, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2], confidential: true, allowedGrantType: .clientCredentials)
+        let newClient = OAuthClient(
+            clientID: newClientString, redirectURIs: nil, clientSecret: testClientSecret, validScopes: [scope1, scope2], confidential: true,
+            allowedGrantType: .clientCredentials)
         fakeClientGetter.validClients[newClientString] = newClient
 
         let response = try await getClientCredentialsResponse(clientID: newClientString)
@@ -304,7 +311,9 @@ class ClientCredentialsTokenTests: XCTestCase {
     func testClientNotConfiguredWithAccessToClientCredentialsFlowCantAccessIt() async throws {
         let unauthorizedID = "not-allowed"
         let unauthorizedSecret = "client-secret"
-        let unauthorizedClient = OAuthClient(clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantType: .refresh)
+        let unauthorizedClient = OAuthClient(
+            clientID: unauthorizedID, redirectURIs: nil, clientSecret: unauthorizedSecret, validScopes: nil, confidential: true,
+            firstParty: true, allowedGrantType: .refresh)
         fakeClientGetter.validClients[unauthorizedID] = unauthorizedClient
 
         let response = try await getClientCredentialsResponse(clientID: unauthorizedID, clientSecret: unauthorizedSecret)
@@ -315,7 +324,9 @@ class ClientCredentialsTokenTests: XCTestCase {
     func testClientConfiguredWithAccessToClientCredentialsFlowCanAccessIt() async throws {
         let authorizedID = "not-allowed"
         let authorizedSecret = "client-secret"
-        let authorizedClient = OAuthClient(clientID: authorizedID, redirectURIs: nil, clientSecret: authorizedSecret, validScopes: nil, confidential: true, firstParty: true, allowedGrantType: .clientCredentials)
+        let authorizedClient = OAuthClient(
+            clientID: authorizedID, redirectURIs: nil, clientSecret: authorizedSecret, validScopes: nil, confidential: true,
+            firstParty: true, allowedGrantType: .clientCredentials)
         fakeClientGetter.validClients[authorizedID] = authorizedClient
 
         let response = try await getClientCredentialsResponse(clientID: authorizedID, clientSecret: authorizedSecret)

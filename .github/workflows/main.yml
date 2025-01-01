@@ -12,21 +12,31 @@ jobs:
   ubuntu_test:
     name: Ubuntu Build & Test
     runs-on: ubuntu-22.04
-    container: swift:5.7.3-jammy
+    container: swift:6.0-jammy
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build
       run: swift build -v
     - name: Run tests
       run: swift test
   macos_test:
     name: macOS Build & Test
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_14.2.app/Contents/Developer
-    runs-on: macos-12
+    runs-on: macos-15
     steps:
-    - uses: actions/checkout@v3
+    - name: Select appropriate Xcode version
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    - uses: actions/checkout@v4
     - name: Build
       run: swift build -v
     - name: Run tests
       run: swift test
+  format:
+    name: Lint Formatting
+    runs-on: ubuntu-22.04
+    container: swift:6.0-jammy
+    steps:
+    - uses: actions/checkout@v4
+    - name: Lint
+      run: swift format lint --strict --recursive .

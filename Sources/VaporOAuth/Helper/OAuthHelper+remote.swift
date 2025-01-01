@@ -104,9 +104,10 @@ extension OAuthHelper {
             guard let username: String = tokenInfoJSON[OAuthResponseParameters.username] else {
                 throw Abort(.internalServerError)
             }
-            oauthUser = OAuthUser(userID: userID, username: username,
-                                  emailAddress: tokenInfoJSON[String.self, at: OAuthResponseParameters.email],
-                                  password: "")
+            oauthUser = OAuthUser(
+                userID: userID, username: username,
+                emailAddress: tokenInfoJSON[String.self, at: OAuthResponseParameters.email],
+                password: "")
         }
 
         remoteTokenResponse = RemoteTokenResponse(scopes: scopes, user: oauthUser)

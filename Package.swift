@@ -13,16 +13,18 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0")
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.111.0")
     ],
     targets: [
         .target(
             name: "VaporOAuth",
             dependencies: [.product(name: "Vapor", package: "vapor")]
         ),
-        .testTarget(name: "VaporOAuthTests", dependencies: [
-            .target(name: "VaporOAuth"),
-            .product(name: "XCTVapor", package: "vapor")
-        ])
+        .testTarget(
+            name: "VaporOAuthTests",
+            dependencies: [
+                .target(name: "VaporOAuth"),
+                .product(name: "XCTVapor", package: "vapor"),
+            ]),
     ]
 )

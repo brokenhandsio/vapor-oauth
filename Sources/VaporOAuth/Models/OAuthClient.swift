@@ -12,8 +12,10 @@ public final class OAuthClient: Extendable {
 
     public var extend: Vapor.Extend = .init()
 
-    public init(clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
-                confidential: Bool? = nil, firstParty: Bool = false, allowedGrantType: OAuthFlowType) {
+    public init(
+        clientID: String, redirectURIs: [String]?, clientSecret: String? = nil, validScopes: [String]? = nil,
+        confidential: Bool? = nil, firstParty: Bool = false, allowedGrantType: OAuthFlowType
+    ) {
         self.clientID = clientID
         self.redirectURIs = redirectURIs
         self.clientSecret = clientSecret

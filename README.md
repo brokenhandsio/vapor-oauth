@@ -37,12 +37,22 @@ For an excellent description on how the standard OAuth flows work, and what to e
 
 Vapor OAuth can be added to your Vapor add with a simple provider. To get started, first add the library to your `Package.swift` dependencies:
 
+Latest stable
 ```swift
 dependencies: [
     ...,
-    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "0.6.0"))
+    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "0.6.1")
 ]
 ```
+
+Latest beta
+```swift
+dependencies: [
+    ...,
+    .package(url: "https://github.com/brokenhandsio/vapor-oauth", from: "1.0.0-beta.2")
+]
+```
+
 
 Next import the library into where you set up your `Droplet`:
 

@@ -9,6 +9,8 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
     private(set) var scope: [String]?
     private(set) var state: String?
     private(set) var csrfToken: String?
+    private(set) var codeChallenge: String?
+    private(set) var codeChallengeMethod: String?
 
     func handleAuthorizationRequest(
         _ request: Request,
@@ -21,6 +23,8 @@ class CapturingAuthoriseHandler: AuthorizeHandler {
         self.scope = authorizationRequestObject.scope
         self.state = authorizationRequestObject.state
         self.csrfToken = authorizationRequestObject.csrfToken
+        self.codeChallenge = authorizationRequestObject.codeChallenge
+        self.codeChallengeMethod = authorizationRequestObject.codeChallengeMethod
 
         return Response(body: .init(string: "Allow/Deny"))
     }

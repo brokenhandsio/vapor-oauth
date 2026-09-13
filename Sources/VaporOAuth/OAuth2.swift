@@ -9,6 +9,7 @@ public struct OAuth2: LifecycleHandler {
     let validScopes: [String]?
     let resourceServerRetriever: ResourceServerRetriever
     let oAuthHelper: OAuthHelper
+    let requirePKCE: Bool
 
     public init(
         codeManager: CodeManager = EmptyCodeManager(),
@@ -18,7 +19,8 @@ public struct OAuth2: LifecycleHandler {
         userManager: UserManager = EmptyUserManager(),
         validScopes: [String]? = nil,
         resourceServerRetriever: ResourceServerRetriever = EmptyResourceServerRetriever(),
-        oAuthHelper: OAuthHelper
+        oAuthHelper: OAuthHelper,
+        requirePKCE: Bool = false
     ) {
         self.codeManager = codeManager
         self.clientRetriever = clientRetriever
@@ -28,6 +30,7 @@ public struct OAuth2: LifecycleHandler {
         self.validScopes = validScopes
         self.resourceServerRetriever = resourceServerRetriever
         self.oAuthHelper = oAuthHelper
+        self.requirePKCE = requirePKCE
     }
 
     public func didBoot(_ application: Application) throws {
@@ -60,7 +63,8 @@ public struct OAuth2: LifecycleHandler {
 
         let authorizeGetHandler = AuthorizeGetHandler(
             authorizeHandler: authorizeHandler,
-            clientValidator: clientValidator
+            clientValidator: clientValidator,
+            requirePKCE: requirePKCE
         )
         let authorizePostHandler = AuthorizePostHandler(
             tokenManager: tokenManager,

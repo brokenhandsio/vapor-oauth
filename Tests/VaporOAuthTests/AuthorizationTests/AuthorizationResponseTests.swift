@@ -315,7 +315,9 @@ class AuthorizationResponseTests: XCTestCase {
         state: String? = nil,
         user: OAuthUser? = TestDataBuilder.anyOAuthUser(),
         csrfToken: String? = "the-csrf-token",
-        sessionID: String? = "the-session-ID"
+        sessionID: String? = "the-session-ID",
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
     ) async throws -> XCTHTTPResponse {
         try await TestDataBuilder.getAuthResponseResponse(
             with: app,
@@ -327,7 +329,41 @@ class AuthorizationResponseTests: XCTestCase {
             state: state,
             csrfToken: csrfToken,
             user: user,
-            sessionID: sessionID
+            sessionID: sessionID,
+            codeChallenge: codeChallenge,
+            codeChallengeMethod: codeChallengeMethod
         )
     }
+}
+
+// MARK: - PKCE
+
+extension AuthorizationResponseTests {
+
+    func testThatCodeChallengeAndMethodSetOnCodeWhenProvided() async throws {
+        let codeChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+        _ = try await getAuthResponse(codeChallenge: codeChallenge, codeChallengeMethod: "S256")
+
+        guard let code = fakeCodeManager.getCode(fakeCodeManager.generatedCode) else {
+            XCTFail()
+            return
+        }
+
+        XCTAssertEqual(code.codeChallenge, codeChallenge)
+        XCTAssertEqual(code.codeChallengeMethod, "S256")
+    }
+
+    func testThatCodeChallengeAndMethodAreNilOnCodeWhenNotProvided() async throws {
+        _ = try await getAuthResponse()
+
+        guard let code = fakeCodeManager.getCode(fakeCodeManager.generatedCode) else {
+            XCTFail()
+            return
+        }
+
+        XCTAssertNil(code.codeChallenge)
+        XCTAssertNil(code.codeChallengeMethod)
+    }
+
 }

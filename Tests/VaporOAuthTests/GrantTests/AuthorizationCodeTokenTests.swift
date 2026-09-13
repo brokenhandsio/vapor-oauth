@@ -457,7 +457,8 @@ class AuthorizationCodeTokenTests: XCTestCase {
         code: String? = "12345ABCD",
         redirectURI: String? = "https://api.brokenhands.io/callback",
         clientID: String? = "1234567890",
-        clientSecret: String? = "ABCDEFGHIJK"
+        clientSecret: String? = "ABCDEFGHIJK",
+        codeVerifier: String? = nil
     ) async throws -> XCTHTTPResponse {
 
         return try await TestDataBuilder.getTokenRequestResponse(
@@ -466,8 +467,65 @@ class AuthorizationCodeTokenTests: XCTestCase {
             clientID: clientID,
             clientSecret: clientSecret,
             redirectURI: redirectURI,
-            code: code
+            code: code,
+            codeVerifier: codeVerifier
         )
+    }
+
+}
+
+// MARK: - PKCE
+
+extension AuthorizationCodeTokenTests {
+
+    // RFC 7636 Appendix B test vector
+    private static let pkceVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+    private static let pkceChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+    private func seedCodeWithChallenge(codeID: String = "pkce-code") {
+        let code = OAuthCode(
+            codeID: codeID, clientID: testClientID, redirectURI: testClientRedirectURI, userID: userID,
+            expiryDate: Date().addingTimeInterval(60), scopes: scopes,
+            codeChallenge: Self.pkceChallenge, codeChallengeMethod: "S256")
+        fakeCodeManager.codes[codeID] = code
+    }
+
+    func testThatCorrectCodeVerifierSucceedsWhenChallengeWasStored() async throws {
+        seedCodeWithChallenge()
+
+        let response = try await getAuthCodeResponse(code: "pkce-code", codeVerifier: Self.pkceVerifier)
+
+        XCTAssertEqual(response.status, .ok)
+    }
+
+    func testThatIncorrectCodeVerifierFailsWithInvalidGrant() async throws {
+        seedCodeWithChallenge()
+
+        let response = try await getAuthCodeResponse(code: "pkce-code", codeVerifier: "wrong-verifier-wrong-verifier-wrong-verifier")
+
+        let responseJSON = try JSONDecoder().decode(ErrorResponse.self, from: response.body)
+
+        XCTAssertEqual(response.status, .badRequest)
+        XCTAssertEqual(responseJSON.error, "invalid_grant")
+    }
+
+    func testThatMissingCodeVerifierFailsWithInvalidGrantWhenChallengeWasStored() async throws {
+        seedCodeWithChallenge()
+
+        let response = try await getAuthCodeResponse(code: "pkce-code", codeVerifier: nil)
+
+        let responseJSON = try JSONDecoder().decode(ErrorResponse.self, from: response.body)
+
+        XCTAssertEqual(response.status, .badRequest)
+        XCTAssertEqual(responseJSON.error, "invalid_grant")
+        XCTAssertEqual(responseJSON.errorDescription, "Request was missing the 'code_verifier' parameter required by PKCE")
+    }
+
+    func testThatCodeVerifierIsIgnoredWhenNoChallengeWasStored() async throws {
+        // testCodeID (seeded in setUp) has no code_challenge
+        let response = try await getAuthCodeResponse(code: testCodeID, codeVerifier: nil)
+
+        XCTAssertEqual(response.status, .ok)
     }
 
 }

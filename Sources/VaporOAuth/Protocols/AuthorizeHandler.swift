@@ -22,4 +22,6 @@ public struct AuthorizationRequestObject {
     public let scope: [String]
     public let state: String?
     public let csrfToken: String
+    public let codeChallenge: String?
+    public let codeChallengeMethod: String?
 }

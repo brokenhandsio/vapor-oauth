@@ -133,6 +133,27 @@ When submitting the authorize form back to Vapor OAuth, in the form data it must
 * `applicationAuthorized` - a boolean value to signify if the user allowed access to the client or not
 * `csrfToken` - the CSRF token supplied in the handler to protect against CSRF attacks
 
+### PKCE (RFC 7636)
+
+The Authorization Code grant supports [PKCE](https://tools.ietf.org/html/rfc7636). A client can send `code_challenge`/`code_challenge_method` to `/oauth/authorize` and must then send the matching `code_verifier` to `/oauth/token`. Only the `S256` challenge method is supported - `plain` (or any other value) is rejected with `invalid_request`.
+
+By default, PKCE is optional. A client that omits `code_challenge` is unaffected. Set `requirePKCE: true` on `OAuth2`'s initializer to reject any authorization request that does not include a `code_challenge`, as required by [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) for all clients:
+
+```swift
+let oauth2 = OAuth2(
+    codeManager: MyCodeManager(),
+    tokenManager: MyTokenManager(),
+    clientRetriever: MyClientRetriever(),
+    authorizeHandler: MyAuthHandler(),
+    oAuthHelper: .local(...),
+    requirePKCE: true
+)
+```
+
+If your `AuthorizeHandler` renders a consent page, `AuthorizationRequestObject` now also carries `codeChallenge`/`codeChallengeMethod`. These need to be preserved (e.g. as part of the URL your consent form posts back to `/oauth/authorize`) the same way `state`/`scope` already are, so they round-trip to the POST step.
+
+If you have your own `CodeManager` implementation, you must override the `generateCode(userID:clientID:redirectURI:scopes:codeChallenge:codeChallengeMethod:)` overload (not just the four-argument one) and persist `codeChallenge`/`codeChallengeMethod` on the `OAuthCode` you store, otherwise the challenge is silently discarded and PKCE verification at the token endpoint is skipped for every code you issue.
+
 ## Implicit Grant
 
 The Implicit Grant is almost identical to the Authorize Code flow, except instead of being redirected back with a code which you then exchange for a token, you get redirected back with the token in the fragment. It is up to the client (such as an iOS application) to then parse the token out of the redirect URI fragment.

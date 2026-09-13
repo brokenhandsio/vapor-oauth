@@ -9,6 +9,8 @@ struct AuthorizePostRequest {
     let responseType: String
     let csrfToken: String
     let scopes: [String]?
+    let codeChallenge: String?
+    let codeChallengeMethod: String?
 }
 
 struct AuthorizePostHandler {
@@ -49,7 +51,9 @@ struct AuthorizePostHandler {
                     userID: requestObject.userID,
                     clientID: requestObject.clientID,
                     redirectURI: requestObject.redirectURIBaseString,
-                    scopes: requestObject.scopes
+                    scopes: requestObject.scopes,
+                    codeChallenge: requestObject.codeChallenge,
+                    codeChallengeMethod: requestObject.codeChallengeMethod
                 )
                 redirectURI += "?code=\(generatedCode)"
             } else {
@@ -109,10 +113,14 @@ struct AuthorizePostHandler {
             scopes = nil
         }
 
+        let codeChallenge: String? = request.query[OAuthRequestParameters.codeChallenge]
+        let codeChallengeMethod: String? = request.query[OAuthRequestParameters.codeChallengeMethod]
+
         return AuthorizePostRequest(
             user: user, userID: userID, redirectURIBaseString: redirectURIBaseString,
             approveApplication: approveApplication, clientID: clientID,
-            responseType: responseType, csrfToken: csrfToken, scopes: scopes)
+            responseType: responseType, csrfToken: csrfToken, scopes: scopes,
+            codeChallenge: codeChallenge, codeChallengeMethod: codeChallengeMethod)
     }
 
 }

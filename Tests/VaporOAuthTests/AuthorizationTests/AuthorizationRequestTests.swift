@@ -371,7 +371,9 @@ class AuthorizationRequestTests: XCTestCase {
         clientID: String?,
         redirectURI: String?,
         scope: String? = nil,
-        state: String? = nil
+        state: String? = nil,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
     ) async throws -> XCTHTTPResponse {
         try await TestDataBuilder.getAuthRequestResponse(
             with: app,
@@ -379,8 +381,94 @@ class AuthorizationRequestTests: XCTestCase {
             clientID: clientID,
             redirectURI: redirectURI,
             scope: scope,
-            state: state
+            state: state,
+            codeChallenge: codeChallenge,
+            codeChallengeMethod: codeChallengeMethod
         )
+    }
+
+}
+
+// MARK: - PKCE
+
+extension AuthorizationRequestTests {
+
+    func testThatCodeChallengeAndMethodArePassedThroughToAuthorizationHandler() async throws {
+        let codeChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+        _ = try await respondToOAuthRequest(
+            clientID: clientID, redirectURI: redirectURI,
+            codeChallenge: codeChallenge, codeChallengeMethod: "S256"
+        )
+
+        XCTAssertEqual(capturingAuthoriseHandler.codeChallenge, codeChallenge)
+        XCTAssertEqual(capturingAuthoriseHandler.codeChallengeMethod, "S256")
+    }
+
+    func testThatPlainCodeChallengeMethodIsRejected() async throws {
+        let response = try await respondToOAuthRequest(
+            clientID: clientID, redirectURI: redirectURI,
+            codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", codeChallengeMethod: "plain"
+        )
+
+        XCTAssertEqual(response.status, .seeOther)
+        XCTAssertEqual(
+            response.headers.location?.value,
+            "\(redirectURI)?error=invalid_request&error_description=code_challenge_method+must+be+S256"
+        )
+    }
+
+    func testThatCodeChallengeWithoutMethodIsRejected() async throws {
+        let response = try await respondToOAuthRequest(
+            clientID: clientID, redirectURI: redirectURI,
+            codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+        )
+
+        XCTAssertEqual(response.status, .seeOther)
+        XCTAssertEqual(
+            response.headers.location?.value,
+            "\(redirectURI)?error=invalid_request&error_description=code_challenge_method+must+be+S256"
+        )
+    }
+
+    func testThatMissingCodeChallengeIsAllowedWhenPKCEIsNotRequired() async throws {
+        let response = try await respondToOAuthRequest(clientID: clientID, redirectURI: redirectURI)
+
+        XCTAssertEqual(response.status, .ok)
+        XCTAssertNil(capturingAuthoriseHandler.codeChallenge)
+    }
+
+    func testThatMissingCodeChallengeIsRejectedWhenPKCEIsRequired() async throws {
+        app.shutdown()
+        app = try TestDataBuilder.getOAuth2Application(
+            clientRetriever: fakeClientRetriever,
+            authorizeHandler: capturingAuthoriseHandler,
+            requirePKCE: true
+        )
+
+        let response = try await respondToOAuthRequest(clientID: clientID, redirectURI: redirectURI)
+
+        XCTAssertEqual(response.status, .seeOther)
+        XCTAssertEqual(
+            response.headers.location?.value,
+            "\(redirectURI)?error=invalid_request&error_description=code_challenge+is+required"
+        )
+    }
+
+    func testThatCodeChallengeIsAcceptedWhenPKCEIsRequired() async throws {
+        app.shutdown()
+        app = try TestDataBuilder.getOAuth2Application(
+            clientRetriever: fakeClientRetriever,
+            authorizeHandler: capturingAuthoriseHandler,
+            requirePKCE: true
+        )
+
+        let response = try await respondToOAuthRequest(
+            clientID: clientID, redirectURI: redirectURI,
+            codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", codeChallengeMethod: "S256"
+        )
+
+        XCTAssertEqual(response.status, .ok)
     }
 
 }

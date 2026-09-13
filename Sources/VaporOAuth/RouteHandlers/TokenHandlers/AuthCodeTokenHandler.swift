@@ -6,6 +6,7 @@ struct AuthCodeTokenHandler {
     let tokenManager: TokenManager
     let codeManager: CodeManager
     let codeValidator = CodeValidator()
+    let pkceValidator = PKCEValidator()
     let tokenResponseGenerator: TokenResponseGenerator
 
     func handleAuthCodeTokenRequest(_ request: Request) async throws -> Response {
@@ -45,6 +46,20 @@ struct AuthCodeTokenHandler {
             return try tokenResponseGenerator.createResponse(
                 error: OAuthResponseParameters.ErrorType.invalidGrant,
                 description: errorDescription)
+        }
+
+        if let codeChallenge = code.codeChallenge {
+            guard let codeVerifier: String = request.content[OAuthRequestParameters.codeVerifier], !codeVerifier.isEmpty else {
+                return try tokenResponseGenerator.createResponse(
+                    error: OAuthResponseParameters.ErrorType.invalidGrant,
+                    description: "Request was missing the 'code_verifier' parameter required by PKCE")
+            }
+
+            guard pkceValidator.verifyCodeVerifier(codeVerifier, matchesChallenge: codeChallenge) else {
+                return try tokenResponseGenerator.createResponse(
+                    error: OAuthResponseParameters.ErrorType.invalidGrant,
+                    description: "Request had an invalid 'code_verifier' for the given code_challenge")
+            }
         }
 
         try await codeManager.codeUsed(code)

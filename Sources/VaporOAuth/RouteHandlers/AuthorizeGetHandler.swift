@@ -3,6 +3,7 @@ import Vapor
 struct AuthorizeGetHandler {
     let authorizeHandler: AuthorizeHandler
     let clientValidator: ClientValidator
+    let requirePKCE: Bool
 
     func handleRequest(request: Request) async throws -> Response {
         let (errorResponse, createdAuthRequestObject) = try await validateRequest(request)
@@ -60,7 +61,9 @@ struct AuthorizeGetHandler {
             responseType: authRequestObject.responseType,
             clientID: authRequestObject.clientID, redirectURI: redirectURI,
             scope: authRequestObject.scopes, state: authRequestObject.state,
-            csrfToken: csrfToken)
+            csrfToken: csrfToken,
+            codeChallenge: authRequestObject.codeChallenge,
+            codeChallengeMethod: authRequestObject.codeChallengeMethod)
 
         return try await authorizeHandler.handleAuthorizationRequest(request, authorizationRequestObject: authorizationRequestObject)
     }
@@ -103,10 +106,33 @@ struct AuthorizeGetHandler {
             return (errorResponse, nil)
         }
 
+        let codeChallenge: String? = request.query[OAuthRequestParameters.codeChallenge]
+        let codeChallengeMethod: String? = request.query[OAuthRequestParameters.codeChallengeMethod]
+
+        if let codeChallenge = codeChallenge, !codeChallenge.isEmpty {
+            guard codeChallengeMethod == PKCEValidator.supportedMethod else {
+                let errorResponse = createErrorResponse(
+                    request: request,
+                    redirectURI: redirectURIString,
+                    errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                    errorDescription: "code_challenge_method+must+be+S256", state: state)
+                return (errorResponse, nil)
+            }
+        } else if requirePKCE {
+            let errorResponse = createErrorResponse(
+                request: request,
+                redirectURI: redirectURIString,
+                errorType: OAuthResponseParameters.ErrorType.invalidRequest,
+                errorDescription: "code_challenge+is+required", state: state)
+            return (errorResponse, nil)
+        }
+
         let authRequestObject = AuthorizationGetRequestObject(
             clientID: clientID, redirectURIString: redirectURIString,
             scopes: scopes, state: state,
-            responseType: responseType)
+            responseType: responseType,
+            codeChallenge: codeChallenge,
+            codeChallengeMethod: codeChallengeMethod)
 
         return (nil, authRequestObject)
     }
@@ -134,4 +160,6 @@ struct AuthorizationGetRequestObject {
     let scopes: [String]
     let state: String?
     let responseType: String
+    let codeChallenge: String?
+    let codeChallengeMethod: String?
 }

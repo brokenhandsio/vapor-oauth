@@ -15,7 +15,8 @@ class TestDataBuilder {
         environment: Environment = .testing,
         logger: CapturingLogger? = nil,
         sessions: FakeSessions? = nil,
-        registeredUsers: [OAuthUser] = []
+        registeredUsers: [OAuthUser] = [],
+        requirePKCE: Bool = false
     ) throws -> Application {
         let app = Application(environment)
 
@@ -39,7 +40,8 @@ class TestDataBuilder {
                     tokenAuthenticator: nil,
                     userManager: nil,
                     tokenManager: nil
-                )
+                ),
+                requirePKCE: requirePKCE
             )
         )
 
@@ -63,7 +65,8 @@ class TestDataBuilder {
         scope: String? = nil,
         username: String? = nil,
         password: String? = nil,
-        refreshToken: String? = nil
+        refreshToken: String? = nil,
+        codeVerifier: String? = nil
     ) async throws -> XCTHTTPResponse {
         struct RequestData: Content {
             var grantType: String?
@@ -75,6 +78,7 @@ class TestDataBuilder {
             var username: String?
             var password: String?
             var refreshToken: String?
+            var codeVerifier: String?
 
             enum CodingKeys: String, CodingKey {
                 case username, password, scope, code
@@ -83,6 +87,7 @@ class TestDataBuilder {
                 case clientSecret = "client_secret"
                 case redirectURI = "redirect_uri"
                 case refreshToken = "refresh_token"
+                case codeVerifier = "code_verifier"
             }
         }
 
@@ -95,7 +100,8 @@ class TestDataBuilder {
             scope: scope,
             username: username,
             password: password,
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            codeVerifier: codeVerifier
         )
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -122,7 +128,9 @@ class TestDataBuilder {
         clientID: String?,
         redirectURI: String?,
         scope: String?,
-        state: String?
+        state: String?,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
     ) async throws -> XCTHTTPResponse {
 
         var queries: [String] = []
@@ -145,6 +153,14 @@ class TestDataBuilder {
 
         if let state = state {
             queries.append("state=\(state)")
+        }
+
+        if let codeChallenge = codeChallenge {
+            queries.append("code_challenge=\(codeChallenge)")
+        }
+
+        if let codeChallengeMethod = codeChallengeMethod {
+            queries.append("code_challenge_method=\(codeChallengeMethod)")
         }
 
         let requestQuery = queries.joined(separator: "&")
@@ -173,7 +189,9 @@ class TestDataBuilder {
         csrfToken: String?,
         user: OAuthUser?,
         sessionCookie: HTTPCookies? = nil,
-        sessionID: String? = nil
+        sessionID: String? = nil,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
     ) async throws -> XCTHTTPResponse {
         var queries: [String] = []
 
@@ -195,6 +213,14 @@ class TestDataBuilder {
 
         if let responseType = responseType {
             queries.append("response_type=\(responseType)")
+        }
+
+        if let codeChallenge = codeChallenge {
+            queries.append("code_challenge=\(codeChallenge)")
+        }
+
+        if let codeChallengeMethod = codeChallengeMethod {
+            queries.append("code_challenge_method=\(codeChallengeMethod)")
         }
 
         let requestQuery = queries.joined(separator: "&")
